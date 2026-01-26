@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CF Tracker Pro v8 (Final)</title>
+    <title>CF Tracker Pro v9 (Auto-Save)</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/ayu-mirage.min.css">
@@ -98,6 +98,8 @@
         #editor-container { display: none; flex-direction: column; height: 100%; }
         .editor-toolbar { padding: 10px; background: var(--bg-sidebar); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
         .CodeMirror { flex: 1; font-family: 'Fira Code', monospace; font-size: 14px; }
+        
+        .save-status { font-size: 0.75rem; color: var(--text-secondary); margin-right: 10px; font-style: italic; }
 
         /* Resizer */
         #resizer { width: 5px; cursor: col-resize; background: transparent; position: absolute; right: 0; top: 0; bottom: 0; z-index: 10; }
@@ -140,12 +142,13 @@
     <div id="main-content">
         <div id="empty-state">
             <h2>Select a Problem</h2>
-            <p>Use the <span style="color:var(--vscode)">VS Code</span> icon to send test cases to CPH.</p>
+            <p>Notes are <b>Auto-Saved</b> as you type.</p>
         </div>
         <div id="editor-container">
             <div class="editor-toolbar">
                 <span id="active-title" style="font-weight:bold;">Problem</span>
-                <div style="display:flex; gap:5px;">
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <span class="save-status" id="save-indicator">Saved</span>
                     <button class="btn" onclick="copyCode()">Copy</button>
                     <button class="btn btn-primary" onclick="submitToCF()">Submit</button>
                     <button class="btn" onclick="closeEditor()" style="color:var(--danger); border-color:var(--danger)">✕</button>
@@ -159,7 +162,7 @@
         // --- CONFIG ---
         const API_CONTESTS = 'https://codeforces.com/api/contest.list';
         const API_USER = 'https://codeforces.com/api/user.status';
-        const CPH_PORT = 27121; // Standard CPH Port
+        const CPH_PORT = 27121;
 
         let state = {
             allContests: [], filteredContests: [], renderedCount: 0,
@@ -170,6 +173,20 @@
 
         const editor = CodeMirror.fromTextArea(document.getElementById("code-editor"), {
             mode: "text/x-c++src", lineNumbers: true, autoCloseBrackets: true
+        });
+
+        // --- AUTO SAVE LOGIC (THE FIX) ---
+        editor.on('change', () => {
+            if(state.activeProblem) {
+                const pid = state.activeProblem.id;
+                const content = editor.getValue();
+                localStorage.setItem(`cf_note_${pid}`, content);
+                
+                // Update UI status
+                const el = document.getElementById('save-indicator');
+                el.innerText = "Saving...";
+                setTimeout(() => el.innerText = "Saved", 500);
+            }
         });
 
         // --- INIT ---
@@ -267,7 +284,6 @@
                     <div class="p-rating">${p.rating ? `<span class="rating-badge">${p.rating}</span>` : ''}</div>
                     <div class="p-actions">
                         <button class="icon-btn vscode" onclick="sendToCPH(${cid}, '${p.index}', '${cleanName}')" title="Open in VSCode (CPH)">⚡</button>
-                        
                         <button class="icon-btn ${isBookmarked ? 'starred' : ''}" 
                                 onclick="toggleBookmark('${pid}', ${cid}, '${p.index}', '${cleanName}', ${p.rating||0}, '${(p.tags||[]).join(",")}')" title="Bookmark">★</button>
                         <button class="icon-btn ${hasNote}" onclick="openEditor('${pid}', ${cid}, '${p.index}', '${cleanName}')" title="Notes">✎</button>
@@ -276,65 +292,37 @@
                 </div>`;
         }
 
-        // --- CPH BRIDGE (VS CODE) ---
+        // --- CPH BRIDGE ---
         async function sendToCPH(contestId, index, name) {
             const url = `https://codeforces.com/contest/${contestId}/problem/${index}`;
             const btn = document.activeElement;
             const originalText = btn.innerHTML;
             btn.innerHTML = '⏳';
-
             try {
-                // 1. Scrape Test Cases via Proxy (Bypass CORS)
                 const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
                 const response = await fetch(proxyUrl);
                 const data = await response.json();
-                
                 if(!data.contents) throw new Error("Proxy Failed");
 
-                // 2. Parse HTML for Inputs/Outputs
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(data.contents, "text/html");
                 const inputs = doc.querySelectorAll(".input pre");
                 const outputs = doc.querySelectorAll(".output pre");
-                
                 let tests = [];
-                inputs.forEach((inp, i) => {
-                    if(outputs[i]) {
-                        tests.push({
-                            input: inp.innerText.trim(),
-                            output: outputs[i].innerText.trim()
-                        });
-                    }
-                });
+                inputs.forEach((inp, i) => { if(outputs[i]) tests.push({ input: inp.innerText.trim(), output: outputs[i].innerText.trim() }); });
 
-                // 3. Construct Payload for CPH
-                const payload = {
-                    name: `${index}. ${name}`,
-                    group: `Codeforces - Contest ${contestId}`,
-                    url: url,
-                    interactive: false,
-                    memoryLimit: 256,
-                    timeLimit: 1000,
-                    tests: tests,
-                    input: { type: "stdin" },
-                    output: { type: "stdout" },
-                    language: "cpp",
-                    batch: { id: "cf-tracker-pro", size: 1 }
-                };
-
-                // 4. Send to Localhost CPH Port
                 await fetch(`http://localhost:${CPH_PORT}/`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        name: `${index}. ${name}`, group: `Codeforces - Contest ${contestId}`,
+                        url: url, interactive: false, memoryLimit: 256, timeLimit: 1000,
+                        tests: tests, input: { type: "stdin" }, output: { type: "stdout" },
+                        language: "cpp", batch: { id: "cf-tracker-pro", size: 1 }
+                    })
                 });
-
                 btn.innerHTML = '✅';
-            } catch (err) {
-                console.error(err);
-                alert("Failed to send to VS Code.\n\nEnsure:\n1. VS Code is Open.\n2. CPH Extension is installed.\n3. You are not blocking mixed-content (HTTP localhost).");
-                btn.innerHTML = '❌';
-            }
+            } catch (err) { console.error(err); alert("Failed. Ensure VS Code + CPH Extension is Open."); btn.innerHTML = '❌'; }
             setTimeout(() => btn.innerHTML = originalText, 2000);
         }
 
@@ -378,7 +366,6 @@
         }
 
         function closeEditor() {
-            if(state.activeProblem) localStorage.setItem(`cf_note_${state.activeProblem.id}`, editor.getValue());
             state.activeProblem = null;
             document.getElementById('editor-container').style.display = 'none';
             document.getElementById('empty-state').style.display = 'flex';
