@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CF Tracker Pro v8 (Final)</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/ayu-mirage.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/eclipse.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/edit/closebrackets.min.js"></script>
+
+    <style>
+        /* --- VARIABLES --- */
+        :root[data-theme="dark"] {
+            --bg-main: #0d1117; --bg-sidebar: #161b22; --bg-card: #21262d;
+            --bg-hover: #30363d; --border: #30363d; --text-primary: #c9d1d9;
+            --text-secondary: #8b949e; --accent: #58a6ff; --success: #238636;
+            --danger: #f85149; --gold: #e3b341; --vscode: #007acc;
+            --tag-bg: #1f2428;
+        }
+        :root[data-theme="light"] {
+            --bg-main: #ffffff; --bg-sidebar: #f6f8fa; --bg-card: #ffffff;
+            --bg-hover: #eaeef2; --border: #d0d7de; --text-primary: #24292f;
+            --text-secondary: #57606a; --accent: #0969da; --success: #1a7f37;
+            --danger: #cf222e; --gold: #d29922; --vscode: #007acc;
+            --tag-bg: #eff1f3;
+        }
+
+        * { box-sizing: border-box; outline: none; }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-main); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
+
+        /* --- SIDEBAR --- */
+        #sidebar { width: 480px; background: var(--bg-sidebar); display: flex; flex-direction: column; flex-shrink: 0; border-right: 1px solid var(--border); position: relative; }
+        
+        .header-panel { padding: 15px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); }
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .header-title { margin: 0; font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        
+        /* Controls */
+        .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .filter-row { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); margin-top: 10px; }
+        
+        input[type="text"] {
+            background: var(--bg-main); border: 1px solid var(--border); color: var(--text-primary);
+            padding: 6px 10px; border-radius: 6px; width: 100%;
+        }
+        input:focus { border-color: var(--accent); }
+
+        .btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .btn:hover { background: var(--bg-hover); }
+        .btn-primary { background: var(--success); border-color: var(--success); color: white; }
+        .btn-active { background: var(--accent); color: white; border-color: var(--accent); }
+
+        /* --- LISTS --- */
+        #contest-list, #bookmark-list { flex: 1; overflow-y: auto; padding: 10px; scroll-behavior: smooth; }
+        #bookmark-list { display: none; }
+
+        .contest-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; }
+        .contest-header { padding: 10px 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .contest-header:hover { background: var(--bg-hover); }
+        .contest-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+        .contest-card.open .contest-body { max-height: 5000px; border-top: 1px solid var(--border); }
+
+        /* --- PROBLEM ROW --- */
+        .problem-row { 
+            display: grid; 
+            grid-template-columns: 24px 35px 1fr 40px 100px; 
+            align-items: start; padding: 10px 12px; 
+            border-bottom: 1px solid var(--border); background: var(--bg-sidebar); gap: 8px;
+        }
+        .problem-row:hover { background: var(--bg-hover); }
+        .problem-row.solved { border-left: 3px solid var(--success); background: rgba(35, 134, 54, 0.08); }
+        
+        .p-status { text-align: center; padding-top: 2px; }
+        .p-index { font-weight: bold; color: var(--accent); padding-top: 2px; }
+        .p-content { display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+        .p-name { font-weight: 500; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        .topic-list { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+        .topic-pill { font-size: 0.7rem; background: var(--tag-bg); color: var(--text-secondary); padding: 1px 6px; border-radius: 4px; white-space: nowrap; border: 1px solid var(--border); }
+
+        .p-rating { display: flex; justify-content: flex-end; padding-top: 2px; }
+        .rating-badge { font-size: 0.75rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; color: var(--text-secondary); background: var(--tag-bg); border: 1px solid var(--border); }
+
+        .p-actions { display: flex; gap: 4px; justify-content: flex-end; }
+        .icon-btn { background: transparent; border: 1px solid transparent; cursor: pointer; font-size: 1rem; padding: 2px 5px; opacity: 0.6; transition: 0.2s; border-radius: 4px; }
+        .icon-btn:hover { opacity: 1; background: var(--bg-hover); border-color: var(--border); }
+        .icon-btn.starred { color: var(--gold); opacity: 1; }
+        .icon-btn.has-note { color: var(--accent); opacity: 1; }
+        .icon-btn.vscode:hover { color: var(--vscode); border-color: var(--vscode); opacity: 1; }
+
+        /* --- EDITOR --- */
+        #main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-main); }
+        #editor-container { display: none; flex-direction: column; height: 100%; }
+        .editor-toolbar { padding: 10px; background: var(--bg-sidebar); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .CodeMirror { flex: 1; font-family: 'Fira Code', monospace; font-size: 14px; }
+
+        /* Resizer */
+        #resizer { width: 5px; cursor: col-resize; background: transparent; position: absolute; right: 0; top: 0; bottom: 0; z-index: 10; }
+        #resizer:hover { background: var(--accent); }
+
+        /* Empty State */
+        #empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <div class="header-panel">
+            <div class="header-row">
+                <div class="header-title">⚡ CF Tracker Pro</div>
+                <button class="btn" onclick="toggleTheme()" id="theme-btn">🌙</button>
+            </div>
+            
+            <input type="text" id="handleInput" placeholder="Enter Handle (e.g. tourist)" onchange="syncUser()">
+            
+            <div class="controls-grid">
+                <button class="btn btn-primary" id="syncBtn" onclick="syncUser()">Sync Status</button>
+                <button class="btn" id="bmBtn" onclick="toggleBookmarksView()">★ Bookmarks</button>
+            </div>
+
+            <div class="filter-row">
+                <label style="display:flex; align-items:center; gap:5px; cursor:pointer;">
+                    <input type="checkbox" id="roundFilter" checked onchange="applyFilters()"> Standard Rounds Only
+                </label>
+            </div>
+        </div>
+
+        <div id="contest-list">
+            <div id="sentinel" style="height: 20px;"></div>
+        </div>
+        <div id="bookmark-list"></div>
+        <div id="resizer"></div>
+    </div>
+
+    <div id="main-content">
+        <div id="empty-state">
+            <h2>Select a Problem</h2>
+            <p>Use the <span style="color:var(--vscode)">VS Code</span> icon to send test cases to CPH.</p>
+        </div>
+        <div id="editor-container">
+            <div class="editor-toolbar">
+                <span id="active-title" style="font-weight:bold;">Problem</span>
+                <div style="display:flex; gap:5px;">
+                    <button class="btn" onclick="copyCode()">Copy</button>
+                    <button class="btn btn-primary" onclick="submitToCF()">Submit</button>
+                    <button class="btn" onclick="closeEditor()" style="color:var(--danger); border-color:var(--danger)">✕</button>
+                </div>
+            </div>
+            <textarea id="code-editor"></textarea>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIG ---
+        const API_CONTESTS = 'https://codeforces.com/api/contest.list';
+        const API_USER = 'https://codeforces.com/api/user.status';
+        const CPH_PORT = 27121; // Standard CPH Port
+
+        let state = {
+            allContests: [], filteredContests: [], renderedCount: 0,
+            solved: new Set(),
+            bookmarks: new Map(JSON.parse(localStorage.getItem('cf_bookmarks_map') || '[]')),
+            activeProblem: null, viewMode: 'contests'
+        };
+
+        const editor = CodeMirror.fromTextArea(document.getElementById("code-editor"), {
+            mode: "text/x-c++src", lineNumbers: true, autoCloseBrackets: true
+        });
+
+        // --- INIT ---
+        async function init() {
+            const theme = localStorage.getItem('cf_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+            editor.setOption("theme", theme === 'dark' ? 'ayu-mirage' : 'eclipse');
+            
+            const h = localStorage.getItem('cf_handle');
+            if(h) { document.getElementById('handleInput').value = h; syncUser(false); }
+
+            try {
+                const res = await fetch(API_CONTESTS);
+                const data = await res.json();
+                if(data.status === 'OK') {
+                    state.allContests = data.result.filter(c => c.phase === 'FINISHED').sort((a,b) => b.id - a.id);
+                    applyFilters();
+                }
+            } catch(e) { console.error(e); }
+
+            const obs = new IntersectionObserver(e => { if(e[0].isIntersecting && state.viewMode === 'contests') renderNextBatch(); }, { rootMargin: '200px' });
+            obs.observe(document.getElementById('sentinel'));
+            initResizer();
+        }
+
+        // --- CORE LOGIC ---
+        function applyFilters() {
+            const onlyStandard = document.getElementById('roundFilter').checked;
+            state.filteredContests = state.allContests.filter(c => {
+                if(!onlyStandard) return true;
+                const n = c.name;
+                return (n.includes("Codeforces Round") || n.includes("Educational")) && !n.includes("Hello") && !n.includes("Good Bye") && !n.includes("ICPC");
+            });
+            document.querySelectorAll('.contest-card').forEach(e => e.remove());
+            state.renderedCount = 0;
+            renderNextBatch();
+        }
+
+        function renderNextBatch() {
+            const list = document.getElementById('contest-list');
+            const batch = state.filteredContests.slice(state.renderedCount, state.renderedCount + 20);
+            batch.forEach(c => {
+                const card = document.createElement('div');
+                card.className = 'contest-card';
+                card.dataset.cid = c.id;
+                card.innerHTML = `
+                    <div class="contest-header" onclick="toggleContest(this, ${c.id})">
+                        <span style="font-weight:500;">${c.name}</span>
+                        <span class="tag" style="background:var(--tag-bg); padding:2px 6px; border-radius:4px; font-size:0.75rem;">#${c.id}</span>
+                    </div>
+                    <div class="contest-body" data-loaded="false"></div>`;
+                list.insertBefore(card, document.getElementById('sentinel'));
+            });
+            state.renderedCount += 20;
+        }
+
+        async function toggleContest(header, cid) {
+            const card = header.parentElement;
+            const body = card.querySelector('.contest-body');
+            if(card.classList.toggle('open') && body.dataset.loaded === "false") {
+                body.innerHTML = '<div style="padding:10px; text-align:center">Loading...</div>';
+                try {
+                    const res = await fetch(`https://codeforces.com/api/contest.standings?contestId=${cid}&from=1&count=1`);
+                    const data = await res.json();
+                    if(data.status === 'OK') {
+                        body.dataset.problems = JSON.stringify(data.result.problems);
+                        renderProblems(body, cid);
+                        body.dataset.loaded = "true";
+                    }
+                } catch(e) { body.innerHTML = '<div style="color:var(--danger); padding:10px">Error</div>'; }
+            }
+        }
+
+        function renderProblems(body, cid) {
+            const problems = JSON.parse(body.dataset.problems);
+            body.innerHTML = problems.map(p => createProblemHTML(p, cid)).join('');
+        }
+
+        function createProblemHTML(p, cid) {
+            const pid = `${cid}${p.index}`;
+            const isSolved = state.solved.has(pid);
+            const isBookmarked = state.bookmarks.has(pid);
+            const hasNote = localStorage.getItem(`cf_note_${pid}`) ? 'has-note' : '';
+            const topicsHtml = (p.tags || []).map(t => `<span class="topic-pill">${t}</span>`).join('');
+            const cleanName = p.name.replace(/'/g,"");
+
+            return `
+                <div class="problem-row ${isSolved ? 'solved' : ''}" id="row-${pid}">
+                    <div class="p-status">${isSolved ? '✅' : ''}</div>
+                    <div class="p-index">${p.index}</div>
+                    <div class="p-content">
+                        <div class="p-name">${p.name}</div>
+                        <div class="topic-list">${topicsHtml}</div>
+                    </div>
+                    <div class="p-rating">${p.rating ? `<span class="rating-badge">${p.rating}</span>` : ''}</div>
+                    <div class="p-actions">
+                        <button class="icon-btn vscode" onclick="sendToCPH(${cid}, '${p.index}', '${cleanName}')" title="Open in VSCode (CPH)">⚡</button>
+                        
+                        <button class="icon-btn ${isBookmarked ? 'starred' : ''}" 
+                                onclick="toggleBookmark('${pid}', ${cid}, '${p.index}', '${cleanName}', ${p.rating||0}, '${(p.tags||[]).join(",")}')" title="Bookmark">★</button>
+                        <button class="icon-btn ${hasNote}" onclick="openEditor('${pid}', ${cid}, '${p.index}', '${cleanName}')" title="Notes">✎</button>
+                        <a href="https://codeforces.com/contest/${cid}/problem/${p.index}" target="_blank" class="icon-btn" title="View">↗</a>
+                    </div>
+                </div>`;
+        }
+
+        // --- CPH BRIDGE (VS CODE) ---
+        async function sendToCPH(contestId, index, name) {
+            const url = `https://codeforces.com/contest/${contestId}/problem/${index}`;
+            const btn = document.activeElement;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳';
+
+            try {
+                // 1. Scrape Test Cases via Proxy (Bypass CORS)
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+                
+                if(!data.contents) throw new Error("Proxy Failed");
+
+                // 2. Parse HTML for Inputs/Outputs
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data.contents, "text/html");
+                const inputs = doc.querySelectorAll(".input pre");
+                const outputs = doc.querySelectorAll(".output pre");
+                
+                let tests = [];
+                inputs.forEach((inp, i) => {
+                    if(outputs[i]) {
+                        tests.push({
+                            input: inp.innerText.trim(),
+                            output: outputs[i].innerText.trim()
+                        });
+                    }
+                });
+
+                // 3. Construct Payload for CPH
+                const payload = {
+                    name: `${index}. ${name}`,
+                    group: `Codeforces - Contest ${contestId}`,
+                    url: url,
+                    interactive: false,
+                    memoryLimit: 256,
+                    timeLimit: 1000,
+                    tests: tests,
+                    input: { type: "stdin" },
+                    output: { type: "stdout" },
+                    language: "cpp",
+                    batch: { id: "cf-tracker-pro", size: 1 }
+                };
+
+                // 4. Send to Localhost CPH Port
+                await fetch(`http://localhost:${CPH_PORT}/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                btn.innerHTML = '✅';
+            } catch (err) {
+                console.error(err);
+                alert("Failed to send to VS Code.\n\nEnsure:\n1. VS Code is Open.\n2. CPH Extension is installed.\n3. You are not blocking mixed-content (HTTP localhost).");
+                btn.innerHTML = '❌';
+            }
+            setTimeout(() => btn.innerHTML = originalText, 2000);
+        }
+
+        // --- BOOKMARKS & EDITOR ---
+        function toggleBookmark(pid, cid, idx, name, rating, tags) {
+            if(state.bookmarks.has(pid)) state.bookmarks.delete(pid);
+            else state.bookmarks.set(pid, { cid, idx, name, rating, tags: tags ? tags.split(',') : [] });
+            localStorage.setItem('cf_bookmarks_map', JSON.stringify([...state.bookmarks]));
+            
+            const row = document.getElementById(`row-${pid}`);
+            if(row) row.querySelector('.p-actions button:nth-child(2)').classList.toggle('starred');
+            if(state.viewMode === 'bookmarks') renderBookmarks();
+        }
+
+        function toggleBookmarksView() {
+            state.viewMode = state.viewMode === 'contests' ? 'bookmarks' : 'contests';
+            document.getElementById('contest-list').style.display = state.viewMode === 'contests' ? 'block' : 'none';
+            document.getElementById('bookmark-list').style.display = state.viewMode === 'bookmarks' ? 'block' : 'none';
+            document.getElementById('bmBtn').classList.toggle('btn-active');
+            if(state.viewMode === 'bookmarks') renderBookmarks();
+        }
+
+        function renderBookmarks() {
+            const list = document.getElementById('bookmark-list');
+            let html = '<div style="padding:15px; font-weight:bold;">Saved Problems</div>';
+            state.bookmarks.forEach((val, pid) => {
+                const p = { index: val.idx, name: val.name, rating: val.rating, tags: val.tags };
+                html += createProblemHTML(p, val.cid);
+            });
+            list.innerHTML = html;
+        }
+
+        function openEditor(pid, cid, idx, name) {
+            state.activeProblem = { id: pid, cid, idx, name };
+            document.getElementById('empty-state').style.display = 'none';
+            document.getElementById('editor-container').style.display = 'flex';
+            document.getElementById('active-title').innerText = `${idx}. ${name}`;
+            const saved = localStorage.getItem(`cf_note_${pid}`);
+            editor.setValue(saved || `// ${name}\n#include <bits/stdc++.h>\nusing namespace std;\n\nvoid solve() {\n    \n}\n\nint main() {\n    ios::sync_with_stdio(0); cin.tie(0);\n    int t; cin >> t;\n    while(t--) solve();\n}`);
+            setTimeout(() => editor.refresh(), 10);
+        }
+
+        function closeEditor() {
+            if(state.activeProblem) localStorage.setItem(`cf_note_${state.activeProblem.id}`, editor.getValue());
+            state.activeProblem = null;
+            document.getElementById('editor-container').style.display = 'none';
+            document.getElementById('empty-state').style.display = 'flex';
+        }
+
+        function copyCode() { navigator.clipboard.writeText(editor.getValue()); }
+        function submitToCF() { if(state.activeProblem) { copyCode(); window.open(`https://codeforces.com/contest/${state.activeProblem.cid}/submit`, '_blank'); } }
+
+        async function syncUser(showUI=true) {
+            const h = document.getElementById('handleInput').value; if(!h) return;
+            localStorage.setItem('cf_handle', h);
+            const btn = document.getElementById('syncBtn'); if(showUI) btn.innerText = "...";
+            try {
+                const res = await fetch(`${API_USER}?handle=${h}`);
+                const data = await res.json();
+                if(data.status === 'OK') {
+                    state.solved.clear();
+                    data.result.forEach(s => { if(s.verdict==='OK') state.solved.add(`${s.contestId}${s.problem.index}`); });
+                    document.querySelectorAll('.problem-row').forEach(row => {
+                        const pid = row.id.replace('row-', '');
+                        if(state.solved.has(pid)) { row.classList.add('solved'); row.querySelector('.p-status').innerText = '✅'; }
+                    });
+                    if(showUI) btn.innerText = "Done";
+                }
+            } catch(e) { if(showUI) btn.innerText = "Err"; }
+            setTimeout(() => btn.innerText = "Sync Status", 2000);
+        }
+
+        function toggleTheme() {
+            const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('cf_theme', next);
+            editor.setOption("theme", next === 'dark' ? 'ayu-mirage' : 'eclipse');
+        }
+
+        function initResizer() {
+            const r = document.getElementById('resizer'), s = document.getElementById('sidebar');
+            let resizing = false;
+            r.addEventListener('mousedown', () => { resizing = true; document.body.style.cursor = 'col-resize'; });
+            document.addEventListener('mousemove', e => { if(resizing) s.style.width = Math.max(300, Math.min(800, e.clientX)) + 'px'; });
+            document.addEventListener('mouseup', () => { resizing = false; document.body.style.cursor = 'default'; });
+        }
+
+        init();
+    </script>
+</body>
+</html>
