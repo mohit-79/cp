@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CF Tracker Pro v19 (Fix)</title>
+    <title>CF Tracker Pro v21 (Data+)</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/ayu-mirage.min.css">
@@ -23,8 +23,7 @@
             --bg-hover: #30363d; --border: #30363d; --text-primary: #c9d1d9;
             --text-secondary: #8b949e; --accent: #58a6ff; --success: #238636;
             --danger: #f85149; --gold: #e3b341; --vscode: #007acc; --tag-bg: #1f2428;
-            /* Progress Bar Colors */
-            --progress-fill: rgba(35, 134, 54, 0.35); 
+            --progress-fill: rgba(35, 134, 54, 0.4); 
             --progress-bg: #21262d;
         }
         :root[data-theme="light"] {
@@ -32,8 +31,7 @@
             --bg-hover: #eaeef2; --border: #d0d7de; --text-primary: #24292f;
             --text-secondary: #57606a; --accent: #0969da; --success: #1a7f37;
             --danger: #cf222e; --gold: #d29922; --tag-bg: #eff1f3;
-            /* Progress Bar Colors */
-            --progress-fill: rgba(26, 127, 55, 0.2);
+            --progress-fill: rgba(26, 127, 55, 0.25);
             --progress-bg: #ffffff;
         }
 
@@ -76,7 +74,7 @@
         #bookmark-list { display: none; }
 
         .contest-card { 
-            background: var(--bg-card); /* Base card bg */
+            background: var(--bg-card); 
             border: 1px solid var(--border); 
             border-radius: 6px; 
             margin-bottom: 8px; 
@@ -89,7 +87,8 @@
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
-            background: var(--progress-bg); /* Fallback */
+            background: var(--progress-bg); 
+            transition: background 0.3s ease;
         }
         .contest-header:hover { opacity: 0.9; }
         
@@ -226,8 +225,10 @@
             filteredContests: [], renderedCount: 0,
             solved: new Set(JSON.parse(localStorage.getItem('cf_cache_solved') || '[]')),
             attemptedContests: new Set(JSON.parse(localStorage.getItem('cf_cache_attempted_contests') || '[]')),
+            attemptedProblems: new Set(JSON.parse(localStorage.getItem('cf_cache_attempted_problems') || '[]')), // NEW
             contestTotals: new Map(JSON.parse(localStorage.getItem('cf_cache_totals') || '[]')), 
-            bookmarks: new Map(), activeProblem: null, viewMode: 'contests', user: null
+            bookmarks: new Map(), activeProblem: null, viewMode: 'contests', user: null,
+            bgFetchQueue: []
         };
 
         const editor = CodeMirror.fromTextArea(document.getElementById("code-editor"), {
@@ -323,10 +324,14 @@
                 const res = await fetch(`${API_USER}?handle=${h}`);
                 const data = await res.json();
                 if(data.status === 'OK') {
+                    // RESET EVERYTHING
                     state.solved.clear();
                     state.attemptedContests.clear();
+                    state.attemptedProblems.clear(); // RESET ATTEMPTS
+                    
                     localStorage.removeItem('cf_cache_solved');
                     localStorage.removeItem('cf_cache_attempted_contests');
+                    localStorage.removeItem('cf_cache_attempted_problems'); // RESET STORAGE
                     
                     document.querySelectorAll('.problem-row.solved').forEach(row => {
                         row.classList.remove('solved');
@@ -335,11 +340,16 @@
 
                     data.result.forEach(s => { 
                         state.attemptedContests.add(s.contestId);
+                        // Track ALL unique attempted problems
+                        state.attemptedProblems.add(`${s.contestId}${s.problem.index}`); 
+                        
                         if(s.verdict === 'OK') state.solved.add(`${s.contestId}${s.problem.index}`); 
                     });
                     
                     localStorage.setItem('cf_cache_solved', JSON.stringify([...state.solved]));
                     localStorage.setItem('cf_cache_attempted_contests', JSON.stringify([...state.attemptedContests]));
+                    localStorage.setItem('cf_cache_attempted_problems', JSON.stringify([...state.attemptedProblems])); // SAVE ATTEMPTS
+                    localStorage.setItem('cf_stat_attempt_count', state.attemptedProblems.size); // SAVE COUNT
                     
                     document.querySelectorAll('.problem-row').forEach(row => {
                         const pid = row.id.replace('row-', '');
@@ -347,9 +357,45 @@
                     });
                     applyFilters(); 
                     if(showUI) btn.innerText = "✓";
+
+                    startBackgroundProgressFetch();
                 }
             } catch(e) { if(showUI) btn.innerText = "!"; }
             setTimeout(() => btn.innerText = "↻", 2000);
+        }
+
+        // --- BG FETCH ---
+        function startBackgroundProgressFetch() {
+            state.bgFetchQueue = [...state.attemptedContests].filter(cid => !state.contestTotals.has(cid));
+            processBackgroundQueue();
+        }
+
+        function processBackgroundQueue() {
+            if(state.bgFetchQueue.length === 0) return;
+            const cid = state.bgFetchQueue.shift();
+            fetch(`https://codeforces.com/api/contest.standings?contestId=${cid}&from=1&count=1`)
+                .then(res => res.json())
+                .then(data => {
+                    if(data.status === 'OK') {
+                        const problems = data.result.problems;
+                        state.contestTotals.set(cid, problems.length);
+                        localStorage.setItem('cf_cache_totals', JSON.stringify([...state.contestTotals]));
+                        updateContestCardStyle(cid);
+                    }
+                })
+                .catch(e => console.log('BG Fetch fail', e))
+                .finally(() => setTimeout(processBackgroundQueue, 300));
+        }
+
+        function updateContestCardStyle(cid) {
+            const header = document.querySelector(`.contest-card[data-cid="${cid}"] .contest-header`);
+            if(header && state.contestTotals.has(cid)) {
+                let total = state.contestTotals.get(cid);
+                let solvedCount = 0;
+                for (let s of state.solved) { if (s.startsWith(cid)) solvedCount++; }
+                let pct = Math.min(100, Math.round((solvedCount / total) * 100));
+                header.style.background = `linear-gradient(90deg, var(--progress-fill) ${pct}%, var(--progress-bg) ${pct}%)`;
+            }
         }
 
         function applyFilters() {
@@ -377,7 +423,6 @@
                 card.className = 'contest-card';
                 card.dataset.cid = c.id;
                 
-                // --- FIX: Apply gradient only to Header string ---
                 let headerStyle = '';
                 if (state.contestTotals.has(c.id)) {
                     let total = state.contestTotals.get(c.id);
@@ -385,6 +430,8 @@
                     for (let s of state.solved) { if (s.startsWith(c.id)) solvedCount++; }
                     let pct = Math.min(100, Math.round((solvedCount / total) * 100));
                     headerStyle = `style="background: linear-gradient(90deg, var(--progress-fill) ${pct}%, var(--progress-bg) ${pct}%)"`;
+                } else if(state.attemptedContests.has(c.id)) {
+                    headerStyle = `style="background: var(--progress-bg)"`;
                 }
 
                 card.innerHTML = `
@@ -406,7 +453,12 @@
             if(card.classList.toggle('open')) {
                 const cached = localStorage.getItem(cacheKey);
                 if(cached) {
-                    processContestData(JSON.parse(cached), cid);
+                    // Update totals on expand just in case
+                    if (!state.contestTotals.has(cid)) {
+                        state.contestTotals.set(cid, JSON.parse(cached).length);
+                        localStorage.setItem('cf_cache_totals', JSON.stringify([...state.contestTotals]));
+                        updateContestCardStyle(cid);
+                    }
                     renderProblemsInBody(body, JSON.parse(cached), cid);
                     body.dataset.loaded = "true";
                 } else {
@@ -417,27 +469,17 @@
                         if(data.status === 'OK') {
                             const problems = data.result.problems;
                             localStorage.setItem(cacheKey, JSON.stringify(problems));
-                            processContestData(problems, cid); 
+                            
+                            if(!state.contestTotals.has(cid)) {
+                                state.contestTotals.set(cid, problems.length);
+                                localStorage.setItem('cf_cache_totals', JSON.stringify([...state.contestTotals]));
+                                updateContestCardStyle(cid);
+                            }
+
                             renderProblemsInBody(body, problems, cid);
                             body.dataset.loaded = "true";
                         }
                     } catch(e) { body.innerHTML = '<div style="color:var(--danger); padding:10px">Error</div>'; }
-                }
-            }
-        }
-
-        function processContestData(problems, cid) {
-            if (!state.contestTotals.has(cid)) {
-                state.contestTotals.set(cid, problems.length);
-                localStorage.setItem('cf_cache_totals', JSON.stringify([...state.contestTotals]));
-                
-                // Update HEADER directly
-                const header = document.querySelector(`.contest-card[data-cid="${cid}"] .contest-header`);
-                if(header) {
-                    let solvedCount = 0;
-                    for (let s of state.solved) { if (s.startsWith(cid)) solvedCount++; }
-                    let pct = Math.min(100, Math.round((solvedCount / problems.length) * 100));
-                    header.style.background = `linear-gradient(90deg, var(--progress-fill) ${pct}%, var(--progress-bg) ${pct}%)`;
                 }
             }
         }
@@ -473,7 +515,6 @@
                 </div>`;
         }
 
-        // --- BOOKMARKS & EDITOR ---
         function toggleBookmark(pid, cid, idx, name, rating, tags) {
             if(state.bookmarks.has(pid)) state.bookmarks.delete(pid);
             else state.bookmarks.set(pid, { cid, idx, name, rating, tags: tags ? tags.split(',') : [] });
