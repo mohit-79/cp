@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CF Tracker Pro v24 (Stable Sync)</title>
+    <title>CF Tracker Pro v25 (Solution Viewer)</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/ayu-mirage.min.css">
@@ -23,16 +23,16 @@
             --bg-hover: #30363d; --border: #30363d; --text-primary: #c9d1d9;
             --text-secondary: #8b949e; --accent: #58a6ff; --success: #238636;
             --danger: #f85149; --gold: #e3b341; --vscode: #007acc; --tag-bg: #1f2428;
-            --progress-fill: rgba(35, 134, 54, 0.4); 
-            --progress-bg: #21262d;
+            --progress-fill: rgba(35, 134, 54, 0.4); --progress-bg: #21262d;
+            --tab-active-bg: #1f2428; --tab-inactive-bg: #161b22;
         }
         :root[data-theme="light"] {
             --bg-main: #ffffff; --bg-sidebar: #f6f8fa; --bg-card: #ffffff;
             --bg-hover: #eaeef2; --border: #d0d7de; --text-primary: #24292f;
             --text-secondary: #57606a; --accent: #0969da; --success: #1a7f37;
             --danger: #cf222e; --gold: #d29922; --tag-bg: #eff1f3;
-            --progress-fill: rgba(26, 127, 55, 0.25);
-            --progress-bg: #ffffff;
+            --progress-fill: rgba(26, 127, 55, 0.25); --progress-bg: #ffffff;
+            --tab-active-bg: #ffffff; --tab-inactive-bg: #f6f8fa;
         }
 
         * { box-sizing: border-box; outline: none; }
@@ -46,14 +46,11 @@
         #user-avatar { width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--border); display: none; }
         .control-row { display: flex; gap: 6px; height: 32px; }
         input[type="text"] { background: var(--bg-main); border: 1px solid var(--border); color: var(--text-primary); padding: 4px 10px; border-radius: 6px; flex: 1; font-size: 0.9rem; }
-        input:focus { border-color: var(--accent); }
         .btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); padding: 0 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; }
         .btn:hover { background: var(--bg-hover); }
         .btn-primary { background: var(--success); border-color: var(--success); color: white; }
         .btn-sm { font-size: 0.75rem; padding: 2px 10px; height: 24px; }
-        .btn-active { background: var(--accent); color: white; border-color: var(--accent); }
         .filter-row { display: flex; align-items: center; gap: 15px; font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px; }
-        .filter-item { display: flex; align-items: center; gap: 5px; cursor: pointer; }
         #bg-stats { font-size: 0.75rem; color: var(--accent); margin-top: 2px; height: 14px; white-space: nowrap; overflow: hidden; }
 
         #contest-list, #bookmark-list { flex: 1; overflow-y: auto; padding: 10px; scroll-behavior: smooth; }
@@ -65,7 +62,6 @@
         .contest-card.open .contest-body { max-height: 5000px; border-top-color: var(--border); }
 
         .problem-row { display: grid; grid-template-columns: 24px 35px 1fr 60px; align-items: start; padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); gap: 8px; }
-        .problem-row:hover { background: var(--bg-hover); }
         .problem-row.solved { border-left: 3px solid var(--success); background: rgba(35, 134, 54, 0.08); }
         .p-status { text-align: center; padding-top: 2px; }
         .p-index { font-weight: bold; color: var(--accent); padding-top: 2px; }
@@ -81,11 +77,23 @@
         .icon-btn.starred { color: var(--gold); opacity: 1; }
         .icon-btn.has-note { color: var(--accent); opacity: 1; }
 
+        /* EDITOR LAYOUT */
         #main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-main); }
         #editor-container { display: none; flex-direction: column; height: 100%; }
-        .editor-toolbar { padding: 10px; background: var(--bg-sidebar); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        
+        .editor-header { background: var(--bg-sidebar); border-bottom: 1px solid var(--border); display: flex; flex-direction: column; }
+        .editor-tabs { display: flex; gap: 2px; padding: 0 10px; margin-top: 10px; }
+        .tab-btn { 
+            padding: 6px 15px; font-size: 0.85rem; font-weight: 600; cursor: pointer; 
+            border-radius: 6px 6px 0 0; background: var(--tab-inactive-bg); 
+            border: 1px solid var(--border); border-bottom: none; opacity: 0.7; 
+        }
+        .tab-btn.active { background: var(--tab-active-bg); opacity: 1; border-top: 2px solid var(--accent); }
+        
+        .editor-toolbar { padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: var(--tab-active-bg); }
         .CodeMirror { flex: 1; font-family: 'Fira Code', monospace; font-size: 14px; }
         .save-status { font-size: 0.75rem; color: var(--text-secondary); margin-right: 10px; font-style: italic; }
+        
         #cloud-loader { height: 2px; background: linear-gradient(90deg, var(--accent), var(--success)); width: 0%; transition: 0.3s; position: absolute; top: 0; left: 0; z-index: 50; }
         #resizer { width: 5px; cursor: col-resize; background: transparent; position: absolute; right: 0; top: 0; bottom: 0; z-index: 10; }
         #empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-secondary); }
@@ -126,13 +134,19 @@
             <p id="cloud-status" style="margin-top:10px; font-size:0.9rem;">☁️ Login to sync</p>
         </div>
         <div id="editor-container">
-            <div class="editor-toolbar">
-                <span id="active-title" style="font-weight:bold; font-size:0.9rem;">Problem</span>
-                <div style="display:flex; align-items:center; gap:5px;">
-                    <span class="save-status" id="save-indicator">Saved</span>
-                    <button class="btn" onclick="copyCode()">Copy</button>
-                    <button class="btn btn-primary" onclick="submitToCF()">Submit</button>
-                    <button class="btn" onclick="closeEditor()" style="color:var(--danger); border-color:var(--danger)">✕</button>
+            <div class="editor-header">
+                <div class="editor-tabs">
+                    <div class="tab-btn active" id="tab-notes" onclick="switchTab('notes')">Notes</div>
+                    <div class="tab-btn" id="tab-solution" onclick="switchTab('solution')">My Solution</div>
+                </div>
+                <div class="editor-toolbar">
+                    <span id="active-title" style="font-weight:bold; font-size:0.9rem;">Problem</span>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <span class="save-status" id="save-indicator">Saved</span>
+                        <button class="btn" onclick="copyCode()">Copy</button>
+                        <button class="btn btn-primary" onclick="submitToCF()">Submit</button>
+                        <button class="btn" onclick="closeEditor()" style="color:var(--danger); border-color:var(--danger)">✕</button>
+                    </div>
                 </div>
             </div>
             <textarea id="code-editor"></textarea>
@@ -161,10 +175,10 @@
             filteredContests: [], renderedCount: 0,
             solved: new Set(JSON.parse(localStorage.getItem('cf_cache_solved') || '[]')),
             attemptedContests: new Set(JSON.parse(localStorage.getItem('cf_cache_attempted_contests') || '[]')),
-            attemptedProblems: new Set(JSON.parse(localStorage.getItem('cf_cache_attempted_problems') || '[]')),
+            submissionMap: new Map(JSON.parse(localStorage.getItem('cf_cache_submission_map') || '[]')), // Stores {pid: submissionId}
             contestTotals: new Map(JSON.parse(localStorage.getItem('cf_cache_totals') || '[]')), 
             bookmarks: new Map(), activeProblem: null, viewMode: 'contests', user: null,
-            bgFetchQueue: []
+            bgFetchQueue: [], currentTab: 'notes'
         };
 
         const editor = CodeMirror.fromTextArea(document.getElementById("code-editor"), {
@@ -200,19 +214,12 @@
             initResizer();
         }
 
-        function handleAuth() {
-            if(state.user) auth.signOut();
-            else auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => alert(e.message));
-        }
-
-        function updateAuthUI() {
-            const btn = document.getElementById('authBtn');
+        function handleAuth() { if(state.user) auth.signOut(); else auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => alert(e.message)); }
+        function updateAuthUI() { 
+            const btn = document.getElementById('authBtn'); 
             const avatar = document.getElementById('user-avatar');
-            if(state.user) {
-                btn.innerText = "Exit"; avatar.src = state.user.photoURL; avatar.style.display = 'block';
-            } else {
-                btn.innerText = "Login"; avatar.style.display = 'none';
-            }
+            if(state.user) { btn.innerText = "Exit"; avatar.src = state.user.photoURL; avatar.style.display = 'block'; }
+            else { btn.innerText = "Login"; avatar.style.display = 'none'; }
         }
 
         async function loadUserData(uid) {
@@ -221,9 +228,9 @@
                 const doc = await db.collection('users').doc(uid).get();
                 if(doc.exists) {
                     const data = doc.data();
-                    if(data.cfHandle) {
-                        document.getElementById('handleInput').value = data.cfHandle;
-                        localStorage.setItem('cf_handle', data.cfHandle);
+                    if(data.cfHandle) { 
+                        document.getElementById('handleInput').value = data.cfHandle; 
+                        localStorage.setItem('cf_handle', data.cfHandle); 
                         syncUser(false); 
                     }
                     if(data.bookmarks) {
@@ -231,7 +238,7 @@
                         localStorage.setItem('cf_bookmarks_map', JSON.stringify([...state.bookmarks]));
                     }
                 }
-            } catch (e) { console.error(e); }
+            } catch(e) {}
             document.getElementById('cloud-loader').style.width = '0%';
         }
 
@@ -252,29 +259,31 @@
             localStorage.setItem('cf_handle', h);
             if(state.user) db.collection('users').doc(state.user.uid).set({ cfHandle: h }, { merge: true });
 
-            const btn = document.getElementById('syncBtn'); 
-            if(showUI) btn.innerText = "...";
-            
+            const btn = document.getElementById('syncBtn'); if(showUI) btn.innerText = "...";
             try {
                 const res = await fetch(`${API_USER}?handle=${h}`);
                 const data = await res.json();
                 if(data.status === 'OK') {
-                    state.solved.clear(); state.attemptedContests.clear(); state.attemptedProblems.clear();
-                    localStorage.removeItem('cf_cache_solved'); localStorage.removeItem('cf_cache_attempted_contests'); localStorage.removeItem('cf_cache_attempted_problems');
+                    state.solved.clear(); state.attemptedContests.clear(); state.submissionMap.clear();
+                    localStorage.removeItem('cf_cache_solved'); localStorage.removeItem('cf_cache_attempted_contests'); localStorage.removeItem('cf_cache_submission_map');
                     
                     document.querySelectorAll('.problem-row.solved').forEach(row => {
                         row.classList.remove('solved'); row.querySelector('.p-status').innerText = '';
                     });
 
+                    // Newest first, so we capture the LATEST ok submission ID
                     data.result.forEach(s => { 
                         state.attemptedContests.add(s.contestId);
-                        state.attemptedProblems.add(`${s.contestId}${s.problem.index}`); 
-                        if(s.verdict === 'OK') state.solved.add(`${s.contestId}${s.problem.index}`); 
+                        const pid = `${s.contestId}${s.problem.index}`;
+                        if(s.verdict === 'OK') {
+                            state.solved.add(pid);
+                            if(!state.submissionMap.has(pid)) state.submissionMap.set(pid, s.id); // Store latest ID
+                        }
                     });
                     
                     localStorage.setItem('cf_cache_solved', JSON.stringify([...state.solved]));
                     localStorage.setItem('cf_cache_attempted_contests', JSON.stringify([...state.attemptedContests]));
-                    localStorage.setItem('cf_cache_attempted_problems', JSON.stringify([...state.attemptedProblems]));
+                    localStorage.setItem('cf_cache_submission_map', JSON.stringify([...state.submissionMap]));
                     
                     document.querySelectorAll('.problem-row').forEach(row => {
                         const pid = row.id.replace('row-', '');
@@ -292,34 +301,29 @@
             state.bgFetchQueue = [...state.attemptedContests].filter(cid => !state.contestTotals.has(cid));
             state.bgFetchQueue.sort((a,b) => b - a);
             if(state.bgFetchQueue.length > 0) { updateStatsBar(); processBackgroundQueue(); }
-            else { document.getElementById('bg-stats').innerText = "All stats up to date."; setTimeout(() => document.getElementById('bg-stats').innerText = "", 3000); }
+            else { document.getElementById('bg-stats').innerText = "Stats synced."; setTimeout(() => document.getElementById('bg-stats').innerText = "", 3000); }
         }
 
         function processBackgroundQueue() {
-            if(state.bgFetchQueue.length === 0) {
-                document.getElementById('bg-stats').innerText = "Sync Complete.";
-                setTimeout(() => document.getElementById('bg-stats').innerText = "", 3000);
-                return;
-            }
+            if(state.bgFetchQueue.length === 0) { document.getElementById('bg-stats').innerText = ""; return; }
             const cid = state.bgFetchQueue.shift();
             updateStatsBar();
             fetch(`https://codeforces.com/api/contest.standings?contestId=${cid}&from=1&count=1`)
                 .then(res => res.json())
                 .then(data => {
                     if(data.status === 'OK') {
-                        const problems = data.result.problems;
-                        state.contestTotals.set(cid, problems.length);
+                        state.contestTotals.set(cid, data.result.problems.length);
                         localStorage.setItem('cf_cache_totals', JSON.stringify([...state.contestTotals]));
                         updateContestCardStyle(cid);
                     }
                 })
-                .catch(e => console.log('BG Fetch fail', e))
+                .catch(e => {})
                 .finally(() => setTimeout(processBackgroundQueue, 800));
         }
 
-        function updateStatsBar() {
-            const el = document.getElementById('bg-stats');
-            if(state.bgFetchQueue.length > 0) el.innerText = `Updating Stats: ${state.bgFetchQueue.length} remaining...`;
+        function updateStatsBar() { 
+            const el = document.getElementById('bg-stats'); 
+            if(state.bgFetchQueue.length>0) el.innerText = `Updating: ${state.bgFetchQueue.length} left...`; 
         }
 
         function updateContestCardStyle(cid) {
@@ -363,15 +367,8 @@
                     for (let s of state.solved) { if (s.startsWith(c.id)) solvedCount++; }
                     let pct = Math.min(100, Math.round((solvedCount / total) * 100));
                     headerStyle = `style="background: linear-gradient(90deg, var(--progress-fill) ${pct}%, var(--progress-bg) ${pct}%)"`;
-                } else if(state.attemptedContests.has(c.id)) {
-                    headerStyle = `style="background: var(--progress-bg)"`;
-                }
-                card.innerHTML = `
-                    <div class="contest-header" onclick="toggleContest(this, ${c.id})" ${headerStyle}>
-                        <span style="font-weight:500;">${c.name}</span>
-                        <span class="tag" style="background:var(--tag-bg); padding:2px 6px; border-radius:4px; font-size:0.75rem;">#${c.id}</span>
-                    </div>
-                    <div class="contest-body" data-loaded="false"></div>`;
+                } else if(state.attemptedContests.has(c.id)) { headerStyle = `style="background: var(--progress-bg)"`; }
+                card.innerHTML = `<div class="contest-header" onclick="toggleContest(this, ${c.id})" ${headerStyle}><span style="font-weight:500;">${c.name}</span><span class="tag" style="background:var(--tag-bg); padding:2px 6px; border-radius:4px; font-size:0.75rem;">#${c.id}</span></div><div class="contest-body" data-loaded="false"></div>`;
                 list.insertBefore(card, document.getElementById('sentinel'));
             });
             state.renderedCount += 20;
@@ -412,9 +409,7 @@
             }
         }
 
-        function renderProblemsInBody(body, problems, cid) {
-            body.innerHTML = problems.map(p => createProblemHTML(p, cid)).join('');
-        }
+        function renderProblemsInBody(body, problems, cid) { body.innerHTML = problems.map(p => createProblemHTML(p, cid)).join(''); }
 
         function createProblemHTML(p, cid) {
             const pid = `${cid}${p.index}`;
@@ -423,22 +418,8 @@
             const hasNote = localStorage.getItem(`cf_note_${pid}`) ? 'has-note' : '';
             let ratingHtml = p.rating ? `<span class="topic-pill rating-pill">${p.rating}</span>` : '';
             const tagsHtml = (p.tags || []).map(t => `<span class="topic-pill">${t}</span>`).join('');
-            const combinedPills = ratingHtml + tagsHtml;
             const cleanName = p.name.replace(/'/g,"");
-            return `
-                <div class="problem-row ${isSolved ? 'solved' : ''}" id="row-${pid}">
-                    <div class="p-status">${isSolved ? '✅' : ''}</div>
-                    <div class="p-index">${p.index}</div>
-                    <div class="p-content">
-                        <div class="p-name">${p.name}</div>
-                        <div class="topic-list">${combinedPills}</div>
-                    </div>
-                    <div class="p-actions">
-                        <button class="icon-btn ${isBookmarked ? 'starred' : ''}" onclick="toggleBookmark('${pid}', ${cid}, '${p.index}', '${cleanName}', ${p.rating||0}, '${(p.tags||[]).join(",")}')">★</button>
-                        <button class="icon-btn ${hasNote}" onclick="openEditor('${pid}', ${cid}, '${p.index}', '${cleanName}')">✎</button>
-                        <a href="https://codeforces.com/contest/${cid}/problem/${p.index}" target="_blank" class="icon-btn">↗</a>
-                    </div>
-                </div>`;
+            return `<div class="problem-row ${isSolved ? 'solved' : ''}" id="row-${pid}"><div class="p-status">${isSolved ? '✅' : ''}</div><div class="p-index">${p.index}</div><div class="p-content"><div class="p-name">${p.name}</div><div class="topic-list">${ratingHtml+tagsHtml}</div></div><div class="p-actions"><button class="icon-btn ${isBookmarked ? 'starred' : ''}" onclick="toggleBookmark('${pid}', ${cid}, '${p.index}', '${cleanName}', ${p.rating||0}, '${(p.tags||[]).join(",")}')">★</button><button class="icon-btn ${hasNote}" onclick="openEditor('${pid}', ${cid}, '${p.index}', '${cleanName}')">✎</button><a href="https://codeforces.com/contest/${cid}/problem/${p.index}" target="_blank" class="icon-btn">↗</a></div></div>`;
         }
 
         function toggleBookmark(pid, cid, idx, name, rating, tags) {
@@ -469,28 +450,69 @@
             list.innerHTML = html;
         }
 
-        // --- EDITOR LOGIC WITH DEBOUNCE (FIX) ---
+        // --- EDITOR & TABS LOGIC ---
         let saveTimeout;
         
+        function switchTab(tabName) {
+            state.currentTab = tabName;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            
+            if(tabName === 'notes') {
+                editor.setOption("readOnly", false);
+                // Reload Note
+                const content = localStorage.getItem(`cf_note_${state.activeProblem.id}`) || `// ${state.activeProblem.name}\n#include <bits/stdc++.h>\nusing namespace std;\n\nvoid solve() {\n    \n}\n\nint main() {\n    ios::sync_with_stdio(0); cin.tie(0);\n    int t; cin >> t;\n    while(t--) solve();\n}`;
+                editor.setValue(content);
+                document.getElementById('save-indicator').innerText = "Notes Loaded";
+            } else {
+                // SOLUTION TAB
+                editor.setOption("readOnly", true);
+                editor.setValue("// Loading Solution...");
+                const subId = state.submissionMap.get(state.activeProblem.id);
+                if(subId) {
+                    fetchSolutionCode(state.activeProblem.cid, subId);
+                } else {
+                    editor.setValue("// No solution found for this problem.\n// You need to submit and get 'Accepted' first, then Sync.");
+                }
+            }
+        }
+
+        async function fetchSolutionCode(cid, subId) {
+            const url = `https://codeforces.com/contest/${cid}/submission/${subId}`;
+            try {
+                const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                const res = await fetch(proxy);
+                const data = await res.json();
+                if(data.contents) {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(data.contents, "text/html");
+                    const code = doc.querySelector("#program-source-text");
+                    if(code) {
+                        editor.setValue(code.innerText);
+                        document.getElementById('save-indicator').innerText = "Solution Loaded";
+                    } else {
+                        editor.setValue("// Could not parse code. Submission might be private.");
+                    }
+                }
+            } catch(e) { editor.setValue("// Error fetching code. Try viewing on Codeforces."); }
+        }
+
         async function openEditor(pid, cid, idx, name) {
             state.activeProblem = { id: pid, cid, idx, name };
             document.getElementById('empty-state').style.display = 'none';
             document.getElementById('editor-container').style.display = 'flex';
             document.getElementById('active-title').innerText = `${idx}. ${name}`;
-            document.getElementById('save-indicator').innerText = "Loaded";
             
-            // 1. Load Local
-            let content = localStorage.getItem(`cf_note_${pid}`) || `// ${name}\n#include <bits/stdc++.h>\nusing namespace std;\n\nvoid solve() {\n    \n}\n\nint main() {\n    ios::sync_with_stdio(0); cin.tie(0);\n    int t; cin >> t;\n    while(t--) solve();\n}`;
-            editor.setValue(content);
+            // Reset to Notes Tab by default
+            switchTab('notes');
 
-            // 2. Fetch Cloud (Latest version)
+            // Background Cloud Check for Notes
             if(state.user) {
                 const noteRef = db.collection('users').doc(state.user.uid).collection('notes').doc(pid);
                 noteRef.get().then(doc => {
                     if(doc.exists) {
                         const cloudContent = doc.data().content;
-                        // If cloud is different, update local (Server Wins)
-                        if(cloudContent !== content) {
+                        if(state.currentTab === 'notes' && cloudContent !== editor.getValue()) {
                             editor.setValue(cloudContent);
                             localStorage.setItem(`cf_note_${pid}`, cloudContent);
                         }
@@ -501,25 +523,19 @@
         }
 
         editor.on('change', () => {
-            if(state.activeProblem) {
+            if(state.activeProblem && state.currentTab === 'notes') {
                 const content = editor.getValue();
                 const pid = state.activeProblem.id;
                 
-                // 1. Instant Local Save
                 localStorage.setItem(`cf_note_${pid}`, content);
                 document.getElementById('save-indicator').innerText = "Saving...";
                 
-                // 2. Debounced Cloud Save (Wait 1s)
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(() => {
                     if(state.user) {
                         db.collection('users').doc(state.user.uid).collection('notes').doc(pid).set({ content }, { merge: true })
-                        .then(() => {
-                            document.getElementById('save-indicator').innerText = "Saved to Cloud";
-                        })
-                        .catch(() => {
-                            document.getElementById('save-indicator').innerText = "Save Failed";
-                        });
+                        .then(() => document.getElementById('save-indicator').innerText = "Saved")
+                        .catch(() => document.getElementById('save-indicator').innerText = "Save Failed");
                     } else {
                         document.getElementById('save-indicator').innerText = "Saved Locally";
                     }
