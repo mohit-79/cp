@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CF Tracker Pro v22 (Live Sync)</title>
+    <title>CF Tracker Pro Final</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/ayu-mirage.min.css">
@@ -366,14 +366,10 @@
             setTimeout(() => btn.innerText = "↻", 2000);
         }
 
-        // --- BACKGROUND FETCH WITH STATUS ---
+        // --- BG FETCH ---
         function startBackgroundProgressFetch() {
-            // Only fetch for contests we don't know the size of
             state.bgFetchQueue = [...state.attemptedContests].filter(cid => !state.contestTotals.has(cid));
-            
-            // Sort queue: Highest IDs (newest) first
             state.bgFetchQueue.sort((a,b) => b - a);
-            
             if(state.bgFetchQueue.length > 0) {
                 updateStatsBar();
                 processBackgroundQueue();
@@ -404,17 +400,12 @@
                     }
                 })
                 .catch(e => console.log('BG Fetch fail', e))
-                .finally(() => {
-                    // 800ms delay to prevent rate limits
-                    setTimeout(processBackgroundQueue, 800);
-                });
+                .finally(() => setTimeout(processBackgroundQueue, 800));
         }
 
         function updateStatsBar() {
             const el = document.getElementById('bg-stats');
-            if(state.bgFetchQueue.length > 0) {
-                el.innerText = `Updating Stats: ${state.bgFetchQueue.length} remaining...`;
-            }
+            if(state.bgFetchQueue.length > 0) el.innerText = `Updating Stats: ${state.bgFetchQueue.length} remaining...`;
         }
 
         function updateContestCardStyle(cid) {
@@ -544,6 +535,7 @@
                 </div>`;
         }
 
+        // --- BOOKMARKS & EDITOR ---
         function toggleBookmark(pid, cid, idx, name, rating, tags) {
             if(state.bookmarks.has(pid)) state.bookmarks.delete(pid);
             else state.bookmarks.set(pid, { cid, idx, name, rating, tags: tags ? tags.split(',') : [] });
@@ -585,7 +577,10 @@
 
             if(state.user) {
                 const note = await db.collection('users').doc(state.user.uid).collection('notes').doc(pid).get();
-                if(note.exists && !localStorage.getItem(`cf_note_${pid}`)) editor.setValue(note.data().content);
+                if(note.exists) {
+                    editor.setValue(note.data().content);
+                    localStorage.setItem(`cf_note_${pid}`, note.data().content);
+                }
             }
             setTimeout(() => editor.refresh(), 10);
         }
