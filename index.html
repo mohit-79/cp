@@ -1,577 +1,9 @@
-<!-- <!DOCTYPE html>
-<html lang="en" data-theme="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CF Tracker Pro (Cloud Sync)</title>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/ayu-mirage.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/eclipse.min.css">
-    
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/clike/clike.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/edit/closebrackets.min.js"></script>
-
-    <style>
-        :root[data-theme="dark"] {
-            --bg-main: #0d1117; --bg-sidebar: #161b22; --bg-card: #21262d;
-            --bg-hover: #30363d; --border: #30363d; --text-primary: #c9d1d9;
-            --text-secondary: #8b949e; --accent: #58a6ff; --success: #238636;
-            --danger: #f85149; --gold: #e3b341; --vscode: #007acc; --tag-bg: #1f2428;
-        }
-        :root[data-theme="light"] {
-            --bg-main: #ffffff; --bg-sidebar: #f6f8fa; --bg-card: #ffffff;
-            --bg-hover: #eaeef2; --border: #d0d7de; --text-primary: #24292f;
-            --text-secondary: #57606a; --accent: #0969da; --success: #1a7f37;
-            --danger: #cf222e; --gold: #d29922; --vscode: #007acc; --tag-bg: #eff1f3;
-        }
-
-        * { box-sizing: border-box; outline: none; }
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-main); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
-
-        /* Sidebar */
-        #sidebar { width: 480px; background: var(--bg-sidebar); display: flex; flex-direction: column; flex-shrink: 0; border-right: 1px solid var(--border); position: relative; }
-        
-        .header-panel { padding: 15px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); }
-        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .header-title { margin: 0; font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-        
-        /* Auth Panel */
-        #user-panel { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; background: var(--bg-card); padding: 8px; border-radius: 6px; border: 1px solid var(--border); }
-        #user-avatar { width: 28px; height: 28px; border-radius: 50%; display: none; }
-        #user-name { font-size: 0.9rem; font-weight: 600; flex: 1; }
-
-        .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .filter-row { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); margin-top: 10px; }
-        
-        input[type="text"] { background: var(--bg-main); border: 1px solid var(--border); color: var(--text-primary); padding: 6px 10px; border-radius: 6px; width: 100%; }
-        input:focus { border-color: var(--accent); }
-
-        .btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; }
-        .btn:hover { background: var(--bg-hover); }
-        .btn-primary { background: var(--success); border-color: var(--success); color: white; }
-        .btn-google { background: #4285F4; border-color: #4285F4; color: white; }
-
-        /* Lists */
-        #contest-list, #bookmark-list { flex: 1; overflow-y: auto; padding: 10px; scroll-behavior: smooth; }
-        #bookmark-list { display: none; }
-
-        .contest-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; }
-        .contest-header { padding: 10px 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-        .contest-header:hover { background: var(--bg-hover); }
-        .contest-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
-        .contest-card.open .contest-body { max-height: 5000px; border-top: 1px solid var(--border); }
-
-        /* Problem Row */
-        .problem-row { display: grid; grid-template-columns: 24px 35px 1fr 40px 100px; align-items: start; padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); gap: 8px; }
-        .problem-row:hover { background: var(--bg-hover); }
-        .problem-row.solved { border-left: 3px solid var(--success); background: rgba(35, 134, 54, 0.08); }
-        
-        .p-status { text-align: center; padding-top: 2px; }
-        .p-index { font-weight: bold; color: var(--accent); padding-top: 2px; }
-        .p-content { display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
-        .p-name { font-weight: 500; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        
-        .topic-list { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
-        .topic-pill { font-size: 0.7rem; background: var(--tag-bg); color: var(--text-secondary); padding: 1px 6px; border-radius: 4px; white-space: nowrap; border: 1px solid var(--border); }
-
-        .p-rating { display: flex; justify-content: flex-end; padding-top: 2px; }
-        .rating-badge { font-size: 0.75rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; color: var(--text-secondary); background: var(--tag-bg); border: 1px solid var(--border); }
-
-        .p-actions { display: flex; gap: 4px; justify-content: flex-end; }
-        .icon-btn { background: transparent; border: 1px solid transparent; cursor: pointer; font-size: 1rem; padding: 2px 5px; opacity: 0.6; transition: 0.2s; border-radius: 4px; }
-        .icon-btn:hover { opacity: 1; background: var(--bg-hover); border-color: var(--border); }
-        .icon-btn.starred { color: var(--gold); opacity: 1; }
-        .icon-btn.has-note { color: var(--accent); opacity: 1; }
-        .icon-btn.vscode:hover { color: var(--vscode); border-color: var(--vscode); opacity: 1; }
-
-        /* Editor */
-        #main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-main); }
-        #editor-container { display: none; flex-direction: column; height: 100%; }
-        .editor-toolbar { padding: 10px; background: var(--bg-sidebar); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .CodeMirror { flex: 1; font-family: 'Fira Code', monospace; font-size: 14px; }
-        .save-status { font-size: 0.75rem; color: var(--text-secondary); margin-right: 10px; font-style: italic; }
-
-        /* Cloud Loader */
-        #cloud-loader { height: 3px; background: linear-gradient(90deg, var(--accent), var(--success)); width: 0%; transition: 0.3s; position: absolute; top: 0; left: 0; z-index: 50; }
-
-        #resizer { width: 5px; cursor: col-resize; background: transparent; position: absolute; right: 0; top: 0; bottom: 0; z-index: 10; }
-        #empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-secondary); }
-    </style>
-</head>
-<body>
-
-    <div id="sidebar">
-        <div id="cloud-loader"></div>
-        <div class="header-panel">
-            <div class="header-row">
-                <div class="header-title">⚡ CF Tracker Pro</div>
-                <button class="btn" onclick="toggleTheme()" id="theme-btn">🌙</button>
-            </div>
-
-            <div id="user-panel">
-                <img id="user-avatar" src="" alt="Avatar">
-                <span id="user-name">Guest</span>
-                <button class="btn btn-google" id="authBtn" onclick="handleAuth()">Login with Google</button>
-            </div>
-            
-            <input type="text" id="handleInput" placeholder="Enter Codeforces Handle" onchange="syncUser()">
-            
-            <div class="controls-grid">
-                <button class="btn btn-primary" id="syncBtn" onclick="syncUser()">Sync Status</button>
-                <button class="btn" id="bmBtn" onclick="toggleBookmarksView()">★ Bookmarks</button>
-            </div>
-
-            <div class="filter-row">
-                <label style="display:flex; align-items:center; gap:5px; cursor:pointer;">
-                    <input type="checkbox" id="roundFilter" checked onchange="applyFilters()"> Standard Rounds Only
-                </label>
-            </div>
-        </div>
-
-        <div id="contest-list">
-            <div id="sentinel" style="height: 20px;"></div>
-        </div>
-        <div id="bookmark-list"></div>
-        <div id="resizer"></div>
-    </div>
-
-    <div id="main-content">
-        <div id="empty-state">
-            <h2>Select a Problem</h2>
-            <p id="cloud-status" style="margin-top:10px;">☁️ Login to sync notes & bookmarks</p>
-        </div>
-        <div id="editor-container">
-            <div class="editor-toolbar">
-                <span id="active-title" style="font-weight:bold;">Problem</span>
-                <div style="display:flex; align-items:center; gap:5px;">
-                    <span class="save-status" id="save-indicator">Saved</span>
-                    <button class="btn" onclick="copyCode()">Copy</button>
-                    <button class="btn btn-primary" onclick="submitToCF()">Submit</button>
-                    <button class="btn" onclick="closeEditor()" style="color:var(--danger); border-color:var(--danger)">✕</button>
-                </div>
-            </div>
-            <textarea id="code-editor"></textarea>
-        </div>
-    </div>
-
-    <script>
-        // --- 1. FIREBASE CONFIGURATION (Using your specific keys) ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyCrNSBbljjJ0AUlGlQQtJixmEyDwGdYuZQ",
-            authDomain: "cf-tracker-48be1.firebaseapp.com",
-            projectId: "cf-tracker-48be1",
-            storageBucket: "cf-tracker-48be1.firebasestorage.app",
-            messagingSenderId: "134861845087",
-            appId: "1:134861845087:web:7344ad4b9c0e9945fb61ea"
-        };
-
-        // Initialize Firebase (Compat)
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-
-        // --- 2. APP STATE ---
-        const API_CONTESTS = 'https://codeforces.com/api/contest.list';
-        const API_USER = 'https://codeforces.com/api/user.status';
-        const CPH_PORT = 27121;
-
-        let state = {
-            allContests: JSON.parse(localStorage.getItem('cf_cache_contests') || '[]'),
-            filteredContests: [], renderedCount: 0,
-            solved: new Set(JSON.parse(localStorage.getItem('cf_cache_solved') || '[]')),
-            bookmarks: new Map(), // Will load from Cloud or Local
-            activeProblem: null, viewMode: 'contests',
-            user: null
-        };
-
-        const editor = CodeMirror.fromTextArea(document.getElementById("code-editor"), {
-            mode: "text/x-c++src", lineNumbers: true, autoCloseBrackets: true
-        });
-
-        // --- 3. INIT ---
-        async function init() {
-            // Setup Theme
-            const theme = localStorage.getItem('cf_theme') || 'dark';
-            document.documentElement.setAttribute('data-theme', theme);
-            editor.setOption("theme", theme === 'dark' ? 'ayu-mirage' : 'eclipse');
-
-            // Apply Cached Data Immediately
-            if(state.allContests.length > 0) applyFilters();
-            
-            // Background Fetch
-            fetchContests();
-
-            // Setup Auth Listener
-            auth.onAuthStateChanged(async (u) => {
-                state.user = u;
-                updateAuthUI();
-                if(u) {
-                    await loadUserData(u.uid);
-                    document.getElementById('cloud-status').innerText = "☁️ Cloud Sync Active";
-                } else {
-                    // Fallback to local storage bookmarks if guest
-                    const localBM = JSON.parse(localStorage.getItem('cf_bookmarks_map') || '[]');
-                    state.bookmarks = new Map(localBM);
-                    document.getElementById('cloud-status').innerText = "⚠️ Guest Mode (Local Storage Only)";
-                }
-            });
-
-            // Handle
-            const h = localStorage.getItem('cf_handle');
-            if(h) document.getElementById('handleInput').value = h;
-
-            // Infinite Scroll
-            const obs = new IntersectionObserver(e => { if(e[0].isIntersecting && state.viewMode === 'contests') renderNextBatch(); }, { rootMargin: '200px' });
-            obs.observe(document.getElementById('sentinel'));
-            initResizer();
-        }
-
-        // --- 4. CLOUD & AUTH LOGIC ---
-        function handleAuth() {
-            if(state.user) {
-                auth.signOut();
-            } else {
-                const provider = new firebase.auth.GoogleAuthProvider();
-                auth.signInWithPopup(provider).catch(e => {
-                    console.error(e);
-                    alert("Login failed: " + e.message + "\nCheck Console for details.");
-                });
-            }
-        }
-
-        function updateAuthUI() {
-            const btn = document.getElementById('authBtn');
-            const name = document.getElementById('user-name');
-            const avatar = document.getElementById('user-avatar');
-            
-            if(state.user) {
-                btn.innerText = "Logout";
-                name.innerText = state.user.displayName.split(' ')[0];
-                avatar.src = state.user.photoURL;
-                avatar.style.display = 'block';
-            } else {
-                btn.innerText = "Login with Google";
-                name.innerText = "Guest";
-                avatar.style.display = 'none';
-            }
-        }
-
-        async function loadUserData(uid) {
-            document.getElementById('cloud-loader').style.width = '70%';
-            try {
-                const docRef = db.collection('users').doc(uid);
-                const doc = await docRef.get();
-                
-                if(doc.exists) {
-                    const data = doc.data();
-                    
-                    // Sync Handle
-                    if(data.cfHandle) {
-                        document.getElementById('handleInput').value = data.cfHandle;
-                        localStorage.setItem('cf_handle', data.cfHandle);
-                        // Don't auto-sync heavy data here, wait for manual or cache
-                    }
-                    
-                    // Sync Bookmarks
-                    if(data.bookmarks) {
-                        // Convert Object back to Map
-                        state.bookmarks = new Map(Object.entries(data.bookmarks));
-                        // Update local cache too for speed next time
-                        localStorage.setItem('cf_bookmarks_map', JSON.stringify([...state.bookmarks]));
-                    }
-                }
-            } catch (e) { console.error("Cloud Load Error:", e); }
-            document.getElementById('cloud-loader').style.width = '0%';
-        }
-
-        // --- 5. CORE FUNCTIONALITY ---
-        async function fetchContests() {
-            try {
-                const res = await fetch(API_CONTESTS);
-                const data = await res.json();
-                if(data.status === 'OK') {
-                    state.allContests = data.result.filter(c => c.phase === 'FINISHED').sort((a,b) => b.id - a.id);
-                    localStorage.setItem('cf_cache_contests', JSON.stringify(state.allContests));
-                    applyFilters();
-                }
-            } catch(e) { console.log("Using cached contests", e); }
-        }
-
-        async function syncUser(showUI=true) {
-            const h = document.getElementById('handleInput').value; if(!h) return;
-            localStorage.setItem('cf_handle', h);
-            
-            // Cloud Save Handle
-            if(state.user) {
-                db.collection('users').doc(state.user.uid).set({ cfHandle: h }, { merge: true });
-            }
-
-            const btn = document.getElementById('syncBtn'); if(showUI) btn.innerText = "...";
-            try {
-                const res = await fetch(`${API_USER}?handle=${h}`);
-                const data = await res.json();
-                if(data.status === 'OK') {
-                    state.solved.clear();
-                    data.result.forEach(s => { if(s.verdict==='OK') state.solved.add(`${s.contestId}${s.problem.index}`); });
-                    localStorage.setItem('cf_cache_solved', JSON.stringify([...state.solved]));
-                    
-                    document.querySelectorAll('.problem-row').forEach(row => {
-                        const pid = row.id.replace('row-', '');
-                        if(state.solved.has(pid)) { row.classList.add('solved'); row.querySelector('.p-status').innerText = '✅'; }
-                    });
-                    if(showUI) btn.innerText = "Done";
-                }
-            } catch(e) { if(showUI) btn.innerText = "Err"; }
-            setTimeout(() => btn.innerText = "Sync Status", 2000);
-        }
-
-        function applyFilters() {
-            const onlyStandard = document.getElementById('roundFilter').checked;
-            state.filteredContests = state.allContests.filter(c => {
-                if(!onlyStandard) return true;
-                const n = c.name;
-                return (n.includes("Codeforces Round") || n.includes("Educational")) && !n.includes("Hello") && !n.includes("Good Bye") && !n.includes("ICPC");
-            });
-            document.querySelectorAll('.contest-card').forEach(e => e.remove());
-            state.renderedCount = 0;
-            renderNextBatch();
-        }
-
-        function renderNextBatch() {
-            const list = document.getElementById('contest-list');
-            const batch = state.filteredContests.slice(state.renderedCount, state.renderedCount + 20);
-            batch.forEach(c => {
-                const card = document.createElement('div');
-                card.className = 'contest-card';
-                card.dataset.cid = c.id;
-                card.innerHTML = `
-                    <div class="contest-header" onclick="toggleContest(this, ${c.id})">
-                        <span style="font-weight:500;">${c.name}</span>
-                        <span class="tag" style="background:var(--tag-bg); padding:2px 6px; border-radius:4px; font-size:0.75rem;">#${c.id}</span>
-                    </div>
-                    <div class="contest-body" data-loaded="false"></div>`;
-                list.insertBefore(card, document.getElementById('sentinel'));
-            });
-            state.renderedCount += 20;
-        }
-
-        async function toggleContest(header, cid) {
-            const card = header.parentElement;
-            const body = card.querySelector('.contest-body');
-            const cacheKey = `cf_contest_${cid}`;
-            const cachedProblems = localStorage.getItem(cacheKey);
-
-            if(card.classList.toggle('open')) {
-                // Instant load from cache
-                if(cachedProblems) {
-                    body.dataset.problems = cachedProblems;
-                    renderProblems(body, cid);
-                    body.dataset.loaded = "true";
-                }
-                
-                // If not in cache or generic 'true', fetch
-                if(!cachedProblems) {
-                    body.innerHTML = '<div style="padding:10px; text-align:center">Loading...</div>';
-                    try {
-                        const res = await fetch(`https://codeforces.com/api/contest.standings?contestId=${cid}&from=1&count=1`);
-                        const data = await res.json();
-                        if(data.status === 'OK') {
-                            const pStr = JSON.stringify(data.result.problems);
-                            localStorage.setItem(cacheKey, pStr);
-                            body.dataset.problems = pStr;
-                            renderProblems(body, cid);
-                            body.dataset.loaded = "true";
-                        }
-                    } catch(e) { body.innerHTML = '<div style="color:var(--danger); padding:10px">Error</div>'; }
-                }
-            }
-        }
-
-        function renderProblems(body, cid) {
-            const problems = JSON.parse(body.dataset.problems);
-            body.innerHTML = problems.map(p => createProblemHTML(p, cid)).join('');
-        }
-
-        function createProblemHTML(p, cid) {
-            const pid = `${cid}${p.index}`;
-            const isSolved = state.solved.has(pid);
-            const isBookmarked = state.bookmarks.has(pid);
-            const hasNote = localStorage.getItem(`cf_note_${pid}`) ? 'has-note' : '';
-            const topicsHtml = (p.tags || []).map(t => `<span class="topic-pill">${t}</span>`).join('');
-            const cleanName = p.name.replace(/'/g,"");
-
-            return `
-                <div class="problem-row ${isSolved ? 'solved' : ''}" id="row-${pid}">
-                    <div class="p-status">${isSolved ? '✅' : ''}</div>
-                    <div class="p-index">${p.index}</div>
-                    <div class="p-content">
-                        <div class="p-name">${p.name}</div>
-                        <div class="topic-list">${topicsHtml}</div>
-                    </div>
-                    <div class="p-rating">${p.rating ? `<span class="rating-badge">${p.rating}</span>` : ''}</div>
-                    <div class="p-actions">
-                        <button class="icon-btn vscode" onclick="sendToCPH(${cid}, '${p.index}', '${cleanName}')" title="Open in VSCode">⚡</button>
-                        <button class="icon-btn ${isBookmarked ? 'starred' : ''}" 
-                                onclick="toggleBookmark('${pid}', ${cid}, '${p.index}', '${cleanName}', ${p.rating||0}, '${(p.tags||[]).join(",")}')">★</button>
-                        <button class="icon-btn ${hasNote}" onclick="openEditor('${pid}', ${cid}, '${p.index}', '${cleanName}')">✎</button>
-                        <a href="https://codeforces.com/contest/${cid}/problem/${p.index}" target="_blank" class="icon-btn">↗</a>
-                    </div>
-                </div>`;
-        }
-
-        // --- 6. BOOKMARKS ---
-        function toggleBookmark(pid, cid, idx, name, rating, tags) {
-            if(state.bookmarks.has(pid)) state.bookmarks.delete(pid);
-            else state.bookmarks.set(pid, { cid, idx, name, rating, tags: tags ? tags.split(',') : [] });
-            
-            // Local Cache
-            localStorage.setItem('cf_bookmarks_map', JSON.stringify([...state.bookmarks]));
-            
-            // Cloud Sync
-            if(state.user) {
-                const bmObj = Object.fromEntries(state.bookmarks);
-                db.collection('users').doc(state.user.uid).set({ bookmarks: bmObj }, { merge: true });
-            }
-
-            const row = document.getElementById(`row-${pid}`);
-            if(row) row.querySelector('.p-actions button:nth-child(2)').classList.toggle('starred');
-            if(state.viewMode === 'bookmarks') renderBookmarks();
-        }
-
-        function toggleBookmarksView() {
-            state.viewMode = state.viewMode === 'contests' ? 'bookmarks' : 'contests';
-            document.getElementById('contest-list').style.display = state.viewMode === 'contests' ? 'block' : 'none';
-            document.getElementById('bookmark-list').style.display = state.viewMode === 'bookmarks' ? 'block' : 'none';
-            document.getElementById('bmBtn').classList.toggle('btn-active');
-            if(state.viewMode === 'bookmarks') renderBookmarks();
-        }
-
-        function renderBookmarks() {
-            const list = document.getElementById('bookmark-list');
-            let html = '<div style="padding:15px; font-weight:bold;">Saved Problems</div>';
-            state.bookmarks.forEach((val, pid) => {
-                const p = { index: val.idx, name: val.name, rating: val.rating, tags: val.tags };
-                html += createProblemHTML(p, val.cid);
-            });
-            list.innerHTML = html;
-        }
-
-        // --- 7. EDITOR & NOTES ---
-        async function openEditor(pid, cid, idx, name) {
-            state.activeProblem = { id: pid, cid, idx, name };
-            document.getElementById('empty-state').style.display = 'none';
-            document.getElementById('editor-container').style.display = 'flex';
-            document.getElementById('active-title').innerText = `${idx}. ${name}`;
-            
-            // 1. Load Local
-            let content = localStorage.getItem(`cf_note_${pid}`);
-            if(content) editor.setValue(content);
-            else editor.setValue(`// ${name}\n#include <bits/stdc++.h>\nusing namespace std;\n\nvoid solve() {\n    \n}\n\nint main() {\n    ios::sync_with_stdio(0); cin.tie(0);\n    int t; cin >> t;\n    while(t--) solve();\n}`);
-
-            // 2. Background Load from Cloud
-            if(state.user) {
-                const noteRef = db.collection('users').doc(state.user.uid).collection('notes').doc(pid);
-                noteRef.get().then(doc => {
-                    if(doc.exists && !content) {
-                         // Only overwrite if local was empty (avoid overwriting unsaved work)
-                        editor.setValue(doc.data().content);
-                    }
-                });
-            }
-            setTimeout(() => editor.refresh(), 10);
-        }
-
-        // Auto Save
-        editor.on('change', () => {
-            if(state.activeProblem) {
-                const pid = state.activeProblem.id;
-                const content = editor.getValue();
-                
-                // Local Save
-                localStorage.setItem(`cf_note_${pid}`, content);
-                document.getElementById('save-indicator').innerText = "Saving...";
-                
-                // Cloud Save (Debounced Simple)
-                if(state.user) {
-                    db.collection('users').doc(state.user.uid).collection('notes').doc(pid).set({ content: content }, { merge: true });
-                }
-                setTimeout(() => document.getElementById('save-indicator').innerText = "Saved", 500);
-            }
-        });
-
-        function closeEditor() {
-            state.activeProblem = null;
-            document.getElementById('editor-container').style.display = 'none';
-            document.getElementById('empty-state').style.display = 'flex';
-        }
-
-        // --- 8. UTILS ---
-        function copyCode() { navigator.clipboard.writeText(editor.getValue()); }
-        function submitToCF() { if(state.activeProblem) { copyCode(); window.open(`https://codeforces.com/contest/${state.activeProblem.cid}/submit`, '_blank'); } }
-        function toggleTheme() {
-            const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', next);
-            localStorage.setItem('cf_theme', next);
-            editor.setOption("theme", next === 'dark' ? 'ayu-mirage' : 'eclipse');
-        }
-        function initResizer() {
-            const r = document.getElementById('resizer'), s = document.getElementById('sidebar');
-            let resizing = false;
-            r.addEventListener('mousedown', () => { resizing = true; document.body.style.cursor = 'col-resize'; });
-            document.addEventListener('mousemove', e => { if(resizing) s.style.width = Math.max(300, Math.min(800, e.clientX)) + 'px'; });
-            document.addEventListener('mouseup', () => { resizing = false; document.body.style.cursor = 'default'; });
-        }
-
-        async function sendToCPH(contestId, index, name) {
-            const url = `https://codeforces.com/contest/${contestId}/problem/${index}`;
-            const btn = document.activeElement;
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '⏳';
-            try {
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-                const response = await fetch(proxyUrl);
-                const data = await response.json();
-                if(!data.contents) throw new Error("Proxy Failed");
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(data.contents, "text/html");
-                const inputs = doc.querySelectorAll(".input pre");
-                const outputs = doc.querySelectorAll(".output pre");
-                let tests = [];
-                inputs.forEach((inp, i) => { if(outputs[i]) tests.push({ input: inp.innerText.trim(), output: outputs[i].innerText.trim() }); });
-                await fetch(`http://localhost:${CPH_PORT}/`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: `${index}. ${name}`, group: `Codeforces - Contest ${contestId}`,
-                        url: url, interactive: false, memoryLimit: 256, timeLimit: 1000,
-                        tests: tests, input: { type: "stdin" }, output: { type: "stdout" },
-                        language: "cpp", batch: { id: "cf-tracker-pro", size: 1 }
-                    })
-                });
-                btn.innerHTML = '✅';
-            } catch (err) { console.error(err); alert("Failed. Ensure VS Code + CPH Extension is Open."); btn.innerHTML = '❌'; }
-            setTimeout(() => btn.innerHTML = originalText, 2000);
-        }
-
-        init();
-    </script>
-</body>
-</html>
- -->
-
-
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CF Tracker Pro (Cloud Sync)</title>
+    <title>CF Tracker Pro v14 (Clean Sync)</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/ayu-mirage.min.css">
@@ -615,7 +47,7 @@
         #user-name { font-size: 0.9rem; font-weight: 600; flex: 1; }
 
         .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .filter-row { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); margin-top: 10px; }
+        .filter-row { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); margin-top: 8px; }
         
         input[type="text"] { background: var(--bg-main); border: 1px solid var(--border); color: var(--text-primary); padding: 6px 10px; border-radius: 6px; width: 100%; }
         input:focus { border-color: var(--accent); }
@@ -700,6 +132,11 @@
                     <input type="checkbox" id="roundFilter" checked onchange="applyFilters()"> Standard Rounds Only
                 </label>
             </div>
+            <div class="filter-row">
+                <label style="display:flex; align-items:center; gap:5px; cursor:pointer; color:var(--accent);">
+                    <input type="checkbox" id="attemptedFilter" onchange="applyFilters()"> Attempted Contests Only
+                </label>
+            </div>
         </div>
 
         <div id="contest-list">
@@ -729,7 +166,7 @@
     </div>
 
     <script>
-        // --- 1. FIREBASE CONFIGURATION (Using your specific keys) ---
+        // --- 1. FIREBASE CONFIGURATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyCrNSBbljjJ0AUlGlQQtJixmEyDwGdYuZQ",
             authDomain: "cf-tracker-48be1.firebaseapp.com",
@@ -739,7 +176,7 @@
             appId: "1:134861845087:web:7344ad4b9c0e9945fb61ea"
         };
 
-        // Initialize Firebase (Compat)
+        // Initialize Firebase
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
@@ -753,7 +190,8 @@
             allContests: JSON.parse(localStorage.getItem('cf_cache_contests') || '[]'),
             filteredContests: [], renderedCount: 0,
             solved: new Set(JSON.parse(localStorage.getItem('cf_cache_solved') || '[]')),
-            bookmarks: new Map(), // Will load from Cloud or Local
+            attemptedContests: new Set(JSON.parse(localStorage.getItem('cf_cache_attempted_contests') || '[]')),
+            bookmarks: new Map(),
             activeProblem: null, viewMode: 'contests',
             user: null
         };
@@ -800,7 +238,7 @@
                 const provider = new firebase.auth.GoogleAuthProvider();
                 auth.signInWithPopup(provider).catch(e => {
                     console.error(e);
-                    alert("Login failed: " + e.message + "\nCheck Console for details.");
+                    alert("Login failed: " + e.message);
                 });
             }
         }
@@ -856,7 +294,7 @@
             } catch(e) { console.log("Using cached contests", e); }
         }
 
-        // --- FIXED SYNC FUNCTION: WIPES OLD DATA FIRST ---
+        // --- SYNC: COMPLETELY WIPES OLD ATTEMPTED DATA ---
         async function syncUser(showUI=true) {
             const h = document.getElementById('handleInput').value; if(!h) return;
             localStorage.setItem('cf_handle', h);
@@ -868,26 +306,33 @@
                 const res = await fetch(`${API_USER}?handle=${h}`);
                 const data = await res.json();
                 if(data.status === 'OK') {
-                    // 1. HARD RESET: Clear internal set AND LocalStorage
+                    // 1. HARD RESET ALL DATA
                     state.solved.clear();
-                    localStorage.removeItem('cf_cache_solved');
+                    state.attemptedContests.clear(); // Clear old user's history
                     
-                    // 2. HARD RESET: Clear UI Visuals immediately
-                    const solvedRows = document.querySelectorAll('.problem-row.solved');
-                    solvedRows.forEach(row => {
+                    localStorage.removeItem('cf_cache_solved');
+                    localStorage.removeItem('cf_cache_attempted_contests'); // Clear old cache
+                    
+                    // 2. Clear UI Visuals
+                    document.querySelectorAll('.problem-row.solved').forEach(row => {
                         row.classList.remove('solved');
-                        row.querySelector('.p-status').innerText = ''; // Clear checkmark
+                        row.querySelector('.p-status').innerText = '';
                     });
 
                     // 3. Process New Data
                     data.result.forEach(s => { 
+                        // Track Attempts
+                        state.attemptedContests.add(s.contestId);
+                        
+                        // Track Solves
                         if(s.verdict === 'OK') state.solved.add(`${s.contestId}${s.problem.index}`); 
                     });
                     
                     // 4. Save New Data
                     localStorage.setItem('cf_cache_solved', JSON.stringify([...state.solved]));
+                    localStorage.setItem('cf_cache_attempted_contests', JSON.stringify([...state.attemptedContests]));
                     
-                    // 5. Re-apply Visuals for new user
+                    // 5. Re-apply Visuals
                     document.querySelectorAll('.problem-row').forEach(row => {
                         const pid = row.id.replace('row-', '');
                         if(state.solved.has(pid)) { 
@@ -895,18 +340,35 @@
                             row.querySelector('.p-status').innerText = '✅'; 
                         }
                     });
+                    
+                    // 6. Refresh Filter (In case "Attempted Only" is on)
+                    applyFilters();
+
                     if(showUI) btn.innerText = "Done";
                 }
             } catch(e) { if(showUI) btn.innerText = "Err"; }
             setTimeout(() => btn.innerText = "Sync Status", 2000);
         }
 
+        // --- FILTER LOGIC (Updated for Attempts) ---
         function applyFilters() {
             const onlyStandard = document.getElementById('roundFilter').checked;
+            const onlyAttempted = document.getElementById('attemptedFilter').checked;
+
             state.filteredContests = state.allContests.filter(c => {
-                if(!onlyStandard) return true;
-                const n = c.name;
-                return (n.includes("Codeforces Round") || n.includes("Educational")) && !n.includes("Hello") && !n.includes("Good Bye") && !n.includes("ICPC");
+                // Filter 1: Standard Rounds
+                if(onlyStandard) {
+                    const n = c.name;
+                    const isStandard = (n.includes("Codeforces Round") || n.includes("Educational")) && !n.includes("Hello") && !n.includes("Good Bye") && !n.includes("ICPC");
+                    if(!isStandard) return false;
+                }
+
+                // Filter 2: Attempted Only
+                if(onlyAttempted) {
+                    if(!state.attemptedContests.has(c.id)) return false;
+                }
+
+                return true;
             });
             document.querySelectorAll('.contest-card').forEach(e => e.remove());
             state.renderedCount = 0;
@@ -1069,7 +531,7 @@
         function submitToCF() {
             if(state.activeProblem) {
                 copyCode();
-                // Opens Codeforces Submit Page with Contest and Problem Pre-Selected
+                // Direct Deep-Link to Submit Page
                 const submitUrl = `https://codeforces.com/contest/${state.activeProblem.cid}/submit?problemIndex=${state.activeProblem.idx}`;
                 window.open(submitUrl, '_blank');
             }
