@@ -37,67 +37,66 @@
         /* --- COMPACT SIDEBAR --- */
         #sidebar { width: 480px; background: var(--bg-sidebar); display: flex; flex-direction: column; flex-shrink: 0; border-right: 1px solid var(--border); position: relative; }
         
-        .header-panel { padding: 12px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); display: flex; flex-direction: column; gap: 10px; }
+        /* Compact Header Panel */
+        .header-panel { padding: 10px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); display: flex; flex-direction: column; gap: 8px; }
         
         /* Row 1: Brand + Auth + Theme */
-        .top-row { display: flex; justify-content: space-between; align-items: center; height: 24px; }
-        .brand { font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 6px; }
-        .top-actions { display: flex; align-items: center; gap: 6px; }
+        .top-row { display: flex; justify-content: space-between; align-items: center; height: 28px; }
+        .brand { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 6px; }
+        .top-actions { display: flex; align-items: center; gap: 8px; }
+        #user-avatar { width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--border); display: none; }
         
-        #user-avatar { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); display: none; }
-        
-        /* Row 2: Input + Controls */
+        /* Row 2: Input + Buttons */
         .control-row { display: flex; gap: 6px; height: 32px; }
         input[type="text"] { 
             background: var(--bg-main); border: 1px solid var(--border); color: var(--text-primary); 
-            padding: 4px 8px; border-radius: 6px; flex: 1; font-size: 0.9rem;
+            padding: 4px 10px; border-radius: 6px; flex: 1; font-size: 0.9rem;
         }
         input:focus { border-color: var(--accent); }
 
         .btn { 
             background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); 
-            padding: 0 10px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; 
+            padding: 0 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; 
             display: flex; align-items: center; justify-content: center; gap: 5px; 
         }
         .btn:hover { background: var(--bg-hover); }
         .btn-primary { background: var(--success); border-color: var(--success); color: white; }
-        .btn-icon { padding: 0 8px; font-size: 1rem; }
-        .btn-sm { font-size: 0.75rem; padding: 2px 8px; height: 22px; }
+        .btn-sm { font-size: 0.75rem; padding: 2px 10px; height: 24px; }
         .btn-active { background: var(--accent); color: white; border-color: var(--accent); }
 
-        /* Row 3: Filters */
-        .filter-row { display: flex; align-items: center; gap: 12px; font-size: 0.8rem; color: var(--text-secondary); }
-        .filter-item { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+        /* Row 3: Filters (Inline) */
+        .filter-row { display: flex; align-items: center; gap: 15px; font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
+        .filter-item { display: flex; align-items: center; gap: 5px; cursor: pointer; }
         .filter-item:hover { color: var(--text-primary); }
 
-        /* Lists */
-        #contest-list, #bookmark-list { flex: 1; overflow-y: auto; padding: 0; scroll-behavior: smooth; }
-        #bookmark-list { display: none; padding: 10px; }
+        /* --- LISTS (UNCHANGED) --- */
+        #contest-list, #bookmark-list { flex: 1; overflow-y: auto; padding: 10px; scroll-behavior: smooth; }
+        #bookmark-list { display: none; }
 
-        .contest-card { background: var(--bg-card); border-bottom: 1px solid var(--border); }
-        .contest-header { padding: 8px 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+        .contest-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; }
+        .contest-header { padding: 10px 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .contest-header:hover { background: var(--bg-hover); }
         .contest-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
         .contest-card.open .contest-body { max-height: 5000px; border-top: 1px solid var(--border); }
 
         /* Problem Row */
-        .problem-row { display: grid; grid-template-columns: 20px 30px 1fr 40px 90px; align-items: center; padding: 6px 12px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); gap: 8px; font-size: 0.85rem; }
+        .problem-row { display: grid; grid-template-columns: 24px 35px 1fr 40px 100px; align-items: start; padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); gap: 8px; }
         .problem-row:hover { background: var(--bg-hover); }
         .problem-row.solved { border-left: 3px solid var(--success); background: rgba(35, 134, 54, 0.08); }
         
-        .p-status { text-align: center; }
-        .p-index { font-weight: bold; color: var(--accent); }
-        .p-content { display: flex; flex-direction: column; overflow: hidden; }
-        .p-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .p-status { text-align: center; padding-top: 2px; }
+        .p-index { font-weight: bold; color: var(--accent); padding-top: 2px; }
+        .p-content { display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+        .p-name { font-weight: 500; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
-        .topic-list { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin-top: 2px; }
-        .topic-pill { font-size: 0.65rem; background: var(--tag-bg); color: var(--text-secondary); padding: 0 4px; border-radius: 3px; white-space: nowrap; border: 1px solid var(--border); }
+        .topic-list { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+        .topic-pill { font-size: 0.7rem; background: var(--tag-bg); color: var(--text-secondary); padding: 1px 6px; border-radius: 4px; white-space: nowrap; border: 1px solid var(--border); }
 
-        .p-rating { display: flex; justify-content: flex-end; }
-        .rating-badge { font-size: 0.7rem; font-weight: bold; padding: 1px 5px; border-radius: 3px; color: var(--text-secondary); background: var(--tag-bg); border: 1px solid var(--border); }
+        .p-rating { display: flex; justify-content: flex-end; padding-top: 2px; }
+        .rating-badge { font-size: 0.75rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; color: var(--text-secondary); background: var(--tag-bg); border: 1px solid var(--border); }
 
-        .p-actions { display: flex; gap: 2px; justify-content: flex-end; }
-        .icon-btn { background: transparent; border: 1px solid transparent; cursor: pointer; font-size: 0.9rem; padding: 2px 4px; opacity: 0.6; transition: 0.2s; border-radius: 4px; }
+        .p-actions { display: flex; gap: 4px; justify-content: flex-end; }
+        .icon-btn { background: transparent; border: 1px solid transparent; cursor: pointer; font-size: 1rem; padding: 2px 5px; opacity: 0.6; transition: 0.2s; border-radius: 4px; }
         .icon-btn:hover { opacity: 1; background: var(--bg-hover); border-color: var(--border); }
         .icon-btn.starred { color: var(--gold); opacity: 1; }
         .icon-btn.has-note { color: var(--accent); opacity: 1; }
@@ -106,7 +105,7 @@
         /* Editor */
         #main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-main); }
         #editor-container { display: none; flex-direction: column; height: 100%; }
-        .editor-toolbar { padding: 8px; background: var(--bg-sidebar); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .editor-toolbar { padding: 10px; background: var(--bg-sidebar); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
         .CodeMirror { flex: 1; font-family: 'Fira Code', monospace; font-size: 14px; }
         .save-status { font-size: 0.75rem; color: var(--text-secondary); margin-right: 10px; font-style: italic; }
 
@@ -127,7 +126,7 @@
                 <div class="top-actions">
                     <img id="user-avatar" src="" title="Logged In">
                     <button class="btn btn-sm" id="authBtn" onclick="handleAuth()">Login</button>
-                    <button class="btn btn-sm" onclick="toggleTheme()">🌙</button>
+                    <button class="btn btn-sm" onclick="toggleTheme()" title="Theme">🌙</button>
                 </div>
             </div>
 
@@ -161,12 +160,12 @@
         </div>
         <div id="editor-container">
             <div class="editor-toolbar">
-                <span id="active-title" style="font-weight:bold; font-size:0.9rem;">Problem</span>
+                <span id="active-title" style="font-weight:bold;">Problem</span>
                 <div style="display:flex; align-items:center; gap:5px;">
                     <span class="save-status" id="save-indicator">Saved</span>
-                    <button class="btn btn-sm" onclick="copyCode()">Copy</button>
-                    <button class="btn btn-sm btn-primary" onclick="submitToCF()">Submit</button>
-                    <button class="btn btn-sm" onclick="closeEditor()" style="color:var(--danger); border-color:var(--danger)">✕</button>
+                    <button class="btn" onclick="copyCode()">Copy</button>
+                    <button class="btn btn-primary" onclick="submitToCF()">Submit</button>
+                    <button class="btn" onclick="closeEditor()" style="color:var(--danger); border-color:var(--danger)">✕</button>
                 </div>
             </div>
             <textarea id="code-editor"></textarea>
@@ -246,7 +245,7 @@
             const avatar = document.getElementById('user-avatar');
             
             if(state.user) {
-                btn.innerText = "Exit"; // Shorter text
+                btn.innerText = "Exit"; 
                 avatar.src = state.user.photoURL;
                 avatar.style.display = 'block';
             } else {
@@ -300,6 +299,7 @@
                 const res = await fetch(`${API_USER}?handle=${h}`);
                 const data = await res.json();
                 if(data.status === 'OK') {
+                    // HARD RESET
                     state.solved.clear();
                     state.attemptedContests.clear();
                     localStorage.removeItem('cf_cache_solved');
@@ -360,7 +360,7 @@
                 card.innerHTML = `
                     <div class="contest-header" onclick="toggleContest(this, ${c.id})">
                         <span style="font-weight:500;">${c.name}</span>
-                        <span class="tag" style="background:var(--tag-bg); padding:1px 5px; border-radius:3px; font-size:0.7rem;">#${c.id}</span>
+                        <span class="tag" style="background:var(--tag-bg); padding:2px 6px; border-radius:4px; font-size:0.75rem;">#${c.id}</span>
                     </div>
                     <div class="contest-body" data-loaded="false"></div>`;
                 list.insertBefore(card, document.getElementById('sentinel'));
