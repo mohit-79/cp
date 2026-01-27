@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CF Tracker Pro v16 (Hybrid UI)</title>
+    <title>CF Tracker Pro v17</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/ayu-mirage.min.css">
@@ -22,13 +22,13 @@
             --bg-main: #0d1117; --bg-sidebar: #161b22; --bg-card: #21262d;
             --bg-hover: #30363d; --border: #30363d; --text-primary: #c9d1d9;
             --text-secondary: #8b949e; --accent: #58a6ff; --success: #238636;
-            --danger: #f85149; --gold: #e3b341; --vscode: #007acc; --tag-bg: #1f2428;
+            --danger: #f85149; --gold: #e3b341; --tag-bg: #1f2428;
         }
         :root[data-theme="light"] {
             --bg-main: #ffffff; --bg-sidebar: #f6f8fa; --bg-card: #ffffff;
             --bg-hover: #eaeef2; --border: #d0d7de; --text-primary: #24292f;
             --text-secondary: #57606a; --accent: #0969da; --success: #1a7f37;
-            --danger: #cf222e; --gold: #d29922; --vscode: #007acc; --tag-bg: #eff1f3;
+            --danger: #cf222e; --gold: #d29922; --tag-bg: #eff1f3;
         }
 
         * { box-sizing: border-box; outline: none; }
@@ -37,16 +37,14 @@
         /* --- LAYOUT --- */
         #sidebar { width: 480px; background: var(--bg-sidebar); display: flex; flex-direction: column; flex-shrink: 0; border-right: 1px solid var(--border); position: relative; }
         
-        /* --- COMPACT HEADER (v15 Style) --- */
+        /* --- COMPACT HEADER --- */
         .header-panel { padding: 10px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); display: flex; flex-direction: column; gap: 8px; }
         
-        /* Row 1: Brand + Auth + Theme */
         .top-row { display: flex; justify-content: space-between; align-items: center; height: 28px; }
         .brand { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 6px; }
         .top-actions { display: flex; align-items: center; gap: 8px; }
         #user-avatar { width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--border); display: none; }
         
-        /* Row 2: Input + Buttons */
         .control-row { display: flex; gap: 6px; height: 32px; }
         input[type="text"] { 
             background: var(--bg-main); border: 1px solid var(--border); color: var(--text-primary); 
@@ -64,12 +62,11 @@
         .btn-sm { font-size: 0.75rem; padding: 2px 10px; height: 24px; }
         .btn-active { background: var(--accent); color: white; border-color: var(--accent); }
 
-        /* Row 3: Inline Filters */
         .filter-row { display: flex; align-items: center; gap: 15px; font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px; }
         .filter-item { display: flex; align-items: center; gap: 5px; cursor: pointer; }
         .filter-item:hover { color: var(--text-primary); }
 
-        /* --- LISTS (Restored to v14 Spacious Style) --- */
+        /* --- LISTS --- */
         #contest-list, #bookmark-list { flex: 1; overflow-y: auto; padding: 10px; scroll-behavior: smooth; }
         #bookmark-list { display: none; }
 
@@ -79,10 +76,11 @@
         .contest-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
         .contest-card.open .contest-body { max-height: 5000px; border-top: 1px solid var(--border); }
 
-        /* Problem Row (Spacious) */
+        /* Problem Row (Modified Grid) */
         .problem-row { 
             display: grid; 
-            grid-template-columns: 24px 35px 1fr 40px 100px; 
+            /* Columns: Status | Index | Name+Tags | Actions */
+            grid-template-columns: 24px 35px 1fr 60px; 
             align-items: start; padding: 10px 12px; 
             border-bottom: 1px solid var(--border); background: var(--bg-sidebar); gap: 8px;
         }
@@ -91,21 +89,30 @@
         
         .p-status { text-align: center; padding-top: 2px; }
         .p-index { font-weight: bold; color: var(--accent); padding-top: 2px; }
-        .p-content { display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+        
+        .p-content { display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
         .p-name { font-weight: 500; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
-        .topic-list { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
-        .topic-pill { font-size: 0.7rem; background: var(--tag-bg); color: var(--text-secondary); padding: 1px 6px; border-radius: 4px; white-space: nowrap; border: 1px solid var(--border); }
-
-        .p-rating { display: flex; justify-content: flex-end; padding-top: 2px; }
-        .rating-badge { font-size: 0.75rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; color: var(--text-secondary); background: var(--tag-bg); border: 1px solid var(--border); }
+        .topic-list { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; flex-wrap: wrap; }
+        
+        /* Unified Pill Style */
+        .topic-pill { 
+            font-size: 0.75rem; background: var(--tag-bg); color: var(--text-secondary); 
+            padding: 1px 7px; border-radius: 12px; white-space: nowrap; border: 1px solid var(--border);
+        }
+        
+        /* Rating Specific Style */
+        .topic-pill.rating-pill {
+            color: var(--accent);
+            border-color: var(--accent);
+            font-weight: 700;
+        }
 
         .p-actions { display: flex; gap: 4px; justify-content: flex-end; }
         .icon-btn { background: transparent; border: 1px solid transparent; cursor: pointer; font-size: 1rem; padding: 2px 5px; opacity: 0.6; transition: 0.2s; border-radius: 4px; }
         .icon-btn:hover { opacity: 1; background: var(--bg-hover); border-color: var(--border); }
         .icon-btn.starred { color: var(--gold); opacity: 1; }
         .icon-btn.has-note { color: var(--accent); opacity: 1; }
-        .icon-btn.vscode:hover { color: var(--vscode); border-color: var(--vscode); opacity: 1; }
 
         /* Editor */
         #main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-main); }
@@ -195,7 +202,6 @@
         // --- 2. STATE ---
         const API_CONTESTS = 'https://codeforces.com/api/contest.list';
         const API_USER = 'https://codeforces.com/api/user.status';
-        const CPH_PORT = 27121;
 
         let state = {
             allContests: JSON.parse(localStorage.getItem('cf_cache_contests') || '[]'),
@@ -239,7 +245,6 @@
             initResizer();
         }
 
-        // --- 4. AUTH UI LOGIC ---
         function handleAuth() {
             if(state.user) auth.signOut();
             else auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => alert(e.message));
@@ -279,7 +284,6 @@
             document.getElementById('cloud-loader').style.width = '0%';
         }
 
-        // --- 5. DATA & SYNC ---
         async function fetchContests() {
             try {
                 const res = await fetch(API_CONTESTS);
@@ -304,7 +308,6 @@
                 const res = await fetch(`${API_USER}?handle=${h}`);
                 const data = await res.json();
                 if(data.status === 'OK') {
-                    // HARD RESET
                     state.solved.clear();
                     state.attemptedContests.clear();
                     localStorage.removeItem('cf_cache_solved');
@@ -337,7 +340,6 @@
             setTimeout(() => btn.innerText = "↻", 2000);
         }
 
-        // --- FILTERS & LISTS ---
         function applyFilters() {
             const onlyStandard = document.getElementById('roundFilter').checked;
             const onlyAttempted = document.getElementById('attemptedFilter').checked;
@@ -412,20 +414,31 @@
             const isSolved = state.solved.has(pid);
             const isBookmarked = state.bookmarks.has(pid);
             const hasNote = localStorage.getItem(`cf_note_${pid}`) ? 'has-note' : '';
-            const topics = (p.tags || []).map(t => `<span class="topic-pill">${t}</span>`).join('');
+            
+            // Generate Rating Pill
+            let ratingHtml = '';
+            if(p.rating) {
+                ratingHtml = `<span class="topic-pill rating-pill">${p.rating}</span>`;
+            }
+
+            // Generate Tags
+            const tagsHtml = (p.tags || []).map(t => `<span class="topic-pill">${t}</span>`).join('');
+            
+            // Combine Rating First + Tags
+            const combinedPills = ratingHtml + tagsHtml;
             const cleanName = p.name.replace(/'/g,"");
 
             return `
                 <div class="problem-row ${isSolved ? 'solved' : ''}" id="row-${pid}">
                     <div class="p-status">${isSolved ? '✅' : ''}</div>
                     <div class="p-index">${p.index}</div>
+                    
                     <div class="p-content">
                         <div class="p-name">${p.name}</div>
-                        <div class="topic-list">${topics}</div>
+                        <div class="topic-list">${combinedPills}</div>
                     </div>
-                    <div class="p-rating">${p.rating ? `<span class="rating-badge">${p.rating}</span>` : ''}</div>
+
                     <div class="p-actions">
-                        <button class="icon-btn vscode" onclick="sendToCPH(${cid}, '${p.index}', '${cleanName}')" title="CPH">⚡</button>
                         <button class="icon-btn ${isBookmarked ? 'starred' : ''}" onclick="toggleBookmark('${pid}', ${cid}, '${p.index}', '${cleanName}', ${p.rating||0}, '${(p.tags||[]).join(",")}')">★</button>
                         <button class="icon-btn ${hasNote}" onclick="openEditor('${pid}', ${cid}, '${p.index}', '${cleanName}')">✎</button>
                         <a href="https://codeforces.com/contest/${cid}/problem/${p.index}" target="_blank" class="icon-btn">↗</a>
@@ -433,7 +446,6 @@
                 </div>`;
         }
 
-        // --- BOOKMARKS & EDITOR ---
         function toggleBookmark(pid, cid, idx, name, rating, tags) {
             if(state.bookmarks.has(pid)) state.bookmarks.delete(pid);
             else state.bookmarks.set(pid, { cid, idx, name, rating, tags: tags ? tags.split(',') : [] });
@@ -442,7 +454,7 @@
             if(state.user) db.collection('users').doc(state.user.uid).set({ bookmarks: Object.fromEntries(state.bookmarks) }, { merge: true });
             
             const row = document.getElementById(`row-${pid}`);
-            if(row) row.querySelector('.p-actions button:nth-child(2)').classList.toggle('starred');
+            if(row) row.querySelector('.p-actions button:nth-child(1)').classList.toggle('starred');
             if(state.viewMode === 'bookmarks') renderBookmarks();
         }
 
@@ -497,7 +509,6 @@
             document.getElementById('empty-state').style.display = 'flex';
         }
 
-        // --- UTILS ---
         function copyCode() { navigator.clipboard.writeText(editor.getValue()); }
         function submitToCF() {
             if(state.activeProblem) {
@@ -517,35 +528,6 @@
             r.addEventListener('mousedown', () => { resizing = true; document.body.style.cursor = 'col-resize'; });
             document.addEventListener('mousemove', e => { if(resizing) s.style.width = Math.max(300, Math.min(800, e.clientX)) + 'px'; });
             document.addEventListener('mouseup', () => { resizing = false; document.body.style.cursor = 'default'; });
-        }
-        async function sendToCPH(contestId, index, name) {
-            const url = `https://codeforces.com/contest/${contestId}/problem/${index}`;
-            const btn = document.activeElement;
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '⏳';
-            try {
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-                const response = await fetch(proxyUrl);
-                const data = await response.json();
-                if(!data.contents) throw new Error("Proxy Failed");
-                const doc = new DOMParser().parseFromString(data.contents, "text/html");
-                const inputs = doc.querySelectorAll(".input pre");
-                const outputs = doc.querySelectorAll(".output pre");
-                let tests = [];
-                inputs.forEach((inp, i) => { if(outputs[i]) tests.push({ input: inp.innerText.trim(), output: outputs[i].innerText.trim() }); });
-                await fetch(`http://localhost:${CPH_PORT}/`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: `${index}. ${name}`, group: `Codeforces - Contest ${contestId}`,
-                        url: url, interactive: false, memoryLimit: 256, timeLimit: 1000,
-                        tests: tests, input: { type: "stdin" }, output: { type: "stdout" },
-                        language: "cpp", batch: { id: "cf-tracker-pro", size: 1 }
-                    })
-                });
-                btn.innerHTML = '✅';
-            } catch (err) { btn.innerHTML = '❌'; }
-            setTimeout(() => btn.innerHTML = originalText, 2000);
         }
 
         init();
