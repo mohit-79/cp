@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CF Tracker Pro v25 (Solution Viewer)</title>
+    <title>CF Tracker Pro v26 (Robust)</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/ayu-mirage.min.css">
@@ -77,7 +77,6 @@
         .icon-btn.starred { color: var(--gold); opacity: 1; }
         .icon-btn.has-note { color: var(--accent); opacity: 1; }
 
-        /* EDITOR LAYOUT */
         #main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-main); }
         #editor-container { display: none; flex-direction: column; height: 100%; }
         
@@ -94,6 +93,8 @@
         .CodeMirror { flex: 1; font-family: 'Fira Code', monospace; font-size: 14px; }
         .save-status { font-size: 0.75rem; color: var(--text-secondary); margin-right: 10px; font-style: italic; }
         
+        #view-sub-btn { display: none; } /* Hidden by default */
+
         #cloud-loader { height: 2px; background: linear-gradient(90deg, var(--accent), var(--success)); width: 0%; transition: 0.3s; position: absolute; top: 0; left: 0; z-index: 50; }
         #resizer { width: 5px; cursor: col-resize; background: transparent; position: absolute; right: 0; top: 0; bottom: 0; z-index: 10; }
         #empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-secondary); }
@@ -143,6 +144,7 @@
                     <span id="active-title" style="font-weight:bold; font-size:0.9rem;">Problem</span>
                     <div style="display:flex; align-items:center; gap:5px;">
                         <span class="save-status" id="save-indicator">Saved</span>
+                        <button class="btn" id="view-sub-btn" onclick="openExternalSub()">↗ View on CF</button>
                         <button class="btn" onclick="copyCode()">Copy</button>
                         <button class="btn btn-primary" onclick="submitToCF()">Submit</button>
                         <button class="btn" onclick="closeEditor()" style="color:var(--danger); border-color:var(--danger)">✕</button>
@@ -175,7 +177,7 @@
             filteredContests: [], renderedCount: 0,
             solved: new Set(JSON.parse(localStorage.getItem('cf_cache_solved') || '[]')),
             attemptedContests: new Set(JSON.parse(localStorage.getItem('cf_cache_attempted_contests') || '[]')),
-            submissionMap: new Map(JSON.parse(localStorage.getItem('cf_cache_submission_map') || '[]')), // Stores {pid: submissionId}
+            submissionMap: new Map(JSON.parse(localStorage.getItem('cf_cache_submission_map') || '[]')),
             contestTotals: new Map(JSON.parse(localStorage.getItem('cf_cache_totals') || '[]')), 
             bookmarks: new Map(), activeProblem: null, viewMode: 'contests', user: null,
             bgFetchQueue: [], currentTab: 'notes'
@@ -271,13 +273,12 @@
                         row.classList.remove('solved'); row.querySelector('.p-status').innerText = '';
                     });
 
-                    // Newest first, so we capture the LATEST ok submission ID
                     data.result.forEach(s => { 
                         state.attemptedContests.add(s.contestId);
                         const pid = `${s.contestId}${s.problem.index}`;
                         if(s.verdict === 'OK') {
                             state.solved.add(pid);
-                            if(!state.submissionMap.has(pid)) state.submissionMap.set(pid, s.id); // Store latest ID
+                            if(!state.submissionMap.has(pid)) state.submissionMap.set(pid, s.id); 
                         }
                     });
                     
@@ -450,7 +451,7 @@
             list.innerHTML = html;
         }
 
-        // --- EDITOR & TABS LOGIC ---
+        // --- EDITOR & TABS ---
         let saveTimeout;
         
         function switchTab(tabName) {
@@ -458,21 +459,22 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`tab-${tabName}`).classList.add('active');
             
+            // Toggle External Button visibility
+            document.getElementById('view-sub-btn').style.display = (tabName === 'solution') ? 'block' : 'none';
+
             if(tabName === 'notes') {
                 editor.setOption("readOnly", false);
-                // Reload Note
                 const content = localStorage.getItem(`cf_note_${state.activeProblem.id}`) || `// ${state.activeProblem.name}\n#include <bits/stdc++.h>\nusing namespace std;\n\nvoid solve() {\n    \n}\n\nint main() {\n    ios::sync_with_stdio(0); cin.tie(0);\n    int t; cin >> t;\n    while(t--) solve();\n}`;
                 editor.setValue(content);
                 document.getElementById('save-indicator').innerText = "Notes Loaded";
             } else {
-                // SOLUTION TAB
                 editor.setOption("readOnly", true);
                 editor.setValue("// Loading Solution...");
                 const subId = state.submissionMap.get(state.activeProblem.id);
                 if(subId) {
                     fetchSolutionCode(state.activeProblem.cid, subId);
                 } else {
-                    editor.setValue("// No solution found for this problem.\n// You need to submit and get 'Accepted' first, then Sync.");
+                    editor.setValue("// No solution found.\n// Make sure to Click 'Sync Status' so we can fetch your latest submission IDs.");
                 }
             }
         }
@@ -480,21 +482,27 @@
         async function fetchSolutionCode(cid, subId) {
             const url = `https://codeforces.com/contest/${cid}/submission/${subId}`;
             try {
-                const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                // Using corsproxy.io instead of allorigins
+                const proxy = `https://corsproxy.io/?${encodeURIComponent(url)}`;
                 const res = await fetch(proxy);
-                const data = await res.json();
-                if(data.contents) {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(data.contents, "text/html");
-                    const code = doc.querySelector("#program-source-text");
-                    if(code) {
-                        editor.setValue(code.innerText);
-                        document.getElementById('save-indicator').innerText = "Solution Loaded";
-                    } else {
-                        editor.setValue("// Could not parse code. Submission might be private.");
-                    }
+                const html = await res.text();
+                
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, "text/html");
+                const code = doc.querySelector("#program-source-text");
+                if(code) {
+                    editor.setValue(code.innerText);
+                    document.getElementById('save-indicator').innerText = "Solution Loaded";
+                } else {
+                    editor.setValue("// Could not parse code.\n// Codeforces might be blocking the proxy.\n// Use the 'View on CF' button above.");
                 }
-            } catch(e) { editor.setValue("// Error fetching code. Try viewing on Codeforces."); }
+            } catch(e) { editor.setValue("// Error fetching code.\n// Use the 'View on CF' button above."); }
+        }
+        
+        function openExternalSub() {
+            const subId = state.submissionMap.get(state.activeProblem.id);
+            if(subId) window.open(`https://codeforces.com/contest/${state.activeProblem.cid}/submission/${subId}`, '_blank');
+            else alert("No submission ID found. Please Sync.");
         }
 
         async function openEditor(pid, cid, idx, name) {
@@ -503,10 +511,8 @@
             document.getElementById('editor-container').style.display = 'flex';
             document.getElementById('active-title').innerText = `${idx}. ${name}`;
             
-            // Reset to Notes Tab by default
             switchTab('notes');
 
-            // Background Cloud Check for Notes
             if(state.user) {
                 const noteRef = db.collection('users').doc(state.user.uid).collection('notes').doc(pid);
                 noteRef.get().then(doc => {
