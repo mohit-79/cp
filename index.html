@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CF Tracker Pro v15 (Compact)</title>
+    <title>CF Tracker Pro v14 (Clean Sync)</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/ayu-mirage.min.css">
@@ -34,42 +34,30 @@
         * { box-sizing: border-box; outline: none; }
         body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-main); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
 
-        /* --- COMPACT SIDEBAR --- */
+        /* Sidebar */
         #sidebar { width: 480px; background: var(--bg-sidebar); display: flex; flex-direction: column; flex-shrink: 0; border-right: 1px solid var(--border); position: relative; }
         
-        /* Compact Header Panel */
-        .header-panel { padding: 10px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); display: flex; flex-direction: column; gap: 8px; }
+        .header-panel { padding: 15px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); }
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .header-title { margin: 0; font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
         
-        /* Row 1: Brand + Auth + Theme */
-        .top-row { display: flex; justify-content: space-between; align-items: center; height: 28px; }
-        .brand { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 6px; }
-        .top-actions { display: flex; align-items: center; gap: 8px; }
-        #user-avatar { width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--border); display: none; }
+        /* Auth Panel */
+        #user-panel { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; background: var(--bg-card); padding: 8px; border-radius: 6px; border: 1px solid var(--border); }
+        #user-avatar { width: 28px; height: 28px; border-radius: 50%; display: none; }
+        #user-name { font-size: 0.9rem; font-weight: 600; flex: 1; }
+
+        .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .filter-row { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); margin-top: 8px; }
         
-        /* Row 2: Input + Buttons */
-        .control-row { display: flex; gap: 6px; height: 32px; }
-        input[type="text"] { 
-            background: var(--bg-main); border: 1px solid var(--border); color: var(--text-primary); 
-            padding: 4px 10px; border-radius: 6px; flex: 1; font-size: 0.9rem;
-        }
+        input[type="text"] { background: var(--bg-main); border: 1px solid var(--border); color: var(--text-primary); padding: 6px 10px; border-radius: 6px; width: 100%; }
         input:focus { border-color: var(--accent); }
 
-        .btn { 
-            background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); 
-            padding: 0 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; 
-            display: flex; align-items: center; justify-content: center; gap: 5px; 
-        }
+        .btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; }
         .btn:hover { background: var(--bg-hover); }
         .btn-primary { background: var(--success); border-color: var(--success); color: white; }
-        .btn-sm { font-size: 0.75rem; padding: 2px 10px; height: 24px; }
-        .btn-active { background: var(--accent); color: white; border-color: var(--accent); }
+        .btn-google { background: #4285F4; border-color: #4285F4; color: white; }
 
-        /* Row 3: Filters (Inline) */
-        .filter-row { display: flex; align-items: center; gap: 15px; font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
-        .filter-item { display: flex; align-items: center; gap: 5px; cursor: pointer; }
-        .filter-item:hover { color: var(--text-primary); }
-
-        /* --- LISTS (UNCHANGED) --- */
+        /* Lists */
         #contest-list, #bookmark-list { flex: 1; overflow-y: auto; padding: 10px; scroll-behavior: smooth; }
         #bookmark-list { display: none; }
 
@@ -110,7 +98,7 @@
         .save-status { font-size: 0.75rem; color: var(--text-secondary); margin-right: 10px; font-style: italic; }
 
         /* Cloud Loader */
-        #cloud-loader { height: 2px; background: linear-gradient(90deg, var(--accent), var(--success)); width: 0%; transition: 0.3s; position: absolute; top: 0; left: 0; z-index: 50; }
+        #cloud-loader { height: 3px; background: linear-gradient(90deg, var(--accent), var(--success)); width: 0%; transition: 0.3s; position: absolute; top: 0; left: 0; z-index: 50; }
 
         #resizer { width: 5px; cursor: col-resize; background: transparent; position: absolute; right: 0; top: 0; bottom: 0; z-index: 10; }
         #empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-secondary); }
@@ -121,27 +109,32 @@
     <div id="sidebar">
         <div id="cloud-loader"></div>
         <div class="header-panel">
-            <div class="top-row">
-                <div class="brand">⚡ CF Tracker</div>
-                <div class="top-actions">
-                    <img id="user-avatar" src="" title="Logged In">
-                    <button class="btn btn-sm" id="authBtn" onclick="handleAuth()">Login</button>
-                    <button class="btn btn-sm" onclick="toggleTheme()" title="Theme">🌙</button>
-                </div>
+            <div class="header-row">
+                <div class="header-title">⚡ CF Tracker Pro</div>
+                <button class="btn" onclick="toggleTheme()" id="theme-btn">🌙</button>
             </div>
 
-            <div class="control-row">
-                <input type="text" id="handleInput" placeholder="Handle" onchange="syncUser()">
-                <button class="btn btn-primary" id="syncBtn" onclick="syncUser()" title="Sync">↻</button>
-                <button class="btn" id="bmBtn" onclick="toggleBookmarksView()" title="Bookmarks">★</button>
+            <div id="user-panel">
+                <img id="user-avatar" src="" alt="Avatar">
+                <span id="user-name">Guest</span>
+                <button class="btn btn-google" id="authBtn" onclick="handleAuth()">Login with Google</button>
+            </div>
+            
+            <input type="text" id="handleInput" placeholder="Enter Codeforces Handle" onchange="syncUser()">
+            
+            <div class="controls-grid">
+                <button class="btn btn-primary" id="syncBtn" onclick="syncUser()">Sync Status</button>
+                <button class="btn" id="bmBtn" onclick="toggleBookmarksView()">★ Bookmarks</button>
             </div>
 
             <div class="filter-row">
-                <label class="filter-item">
-                    <input type="checkbox" id="roundFilter" checked onchange="applyFilters()"> Standard
+                <label style="display:flex; align-items:center; gap:5px; cursor:pointer;">
+                    <input type="checkbox" id="roundFilter" checked onchange="applyFilters()"> Standard Rounds Only
                 </label>
-                <label class="filter-item" style="color:var(--accent);">
-                    <input type="checkbox" id="attemptedFilter" onchange="applyFilters()"> Attempted
+            </div>
+            <div class="filter-row">
+                <label style="display:flex; align-items:center; gap:5px; cursor:pointer; color:var(--accent);">
+                    <input type="checkbox" id="attemptedFilter" onchange="applyFilters()"> Attempted Contests Only
                 </label>
             </div>
         </div>
@@ -156,7 +149,7 @@
     <div id="main-content">
         <div id="empty-state">
             <h2>Select a Problem</h2>
-            <p id="cloud-status" style="margin-top:10px; font-size:0.9rem;">☁️ Login to sync</p>
+            <p id="cloud-status" style="margin-top:10px;">☁️ Login to sync notes & bookmarks</p>
         </div>
         <div id="editor-container">
             <div class="editor-toolbar">
@@ -183,11 +176,12 @@
             appId: "1:134861845087:web:7344ad4b9c0e9945fb61ea"
         };
 
+        // Initialize Firebase
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // --- 2. STATE ---
+        // --- 2. APP STATE ---
         const API_CONTESTS = 'https://codeforces.com/api/contest.list';
         const API_USER = 'https://codeforces.com/api/user.status';
         const CPH_PORT = 27121;
@@ -197,7 +191,9 @@
             filteredContests: [], renderedCount: 0,
             solved: new Set(JSON.parse(localStorage.getItem('cf_cache_solved') || '[]')),
             attemptedContests: new Set(JSON.parse(localStorage.getItem('cf_cache_attempted_contests') || '[]')),
-            bookmarks: new Map(), activeProblem: null, viewMode: 'contests', user: null
+            bookmarks: new Map(),
+            activeProblem: null, viewMode: 'contests',
+            user: null
         };
 
         const editor = CodeMirror.fromTextArea(document.getElementById("code-editor"), {
@@ -218,7 +214,7 @@
                 updateAuthUI();
                 if(u) {
                     await loadUserData(u.uid);
-                    document.getElementById('cloud-status').innerText = "☁️ Sync Active";
+                    document.getElementById('cloud-status').innerText = "☁️ Cloud Sync Active";
                 } else {
                     const localBM = JSON.parse(localStorage.getItem('cf_bookmarks_map') || '[]');
                     state.bookmarks = new Map(localBM);
@@ -234,22 +230,32 @@
             initResizer();
         }
 
-        // --- 4. AUTH UI LOGIC ---
+        // --- 4. CLOUD & AUTH LOGIC ---
         function handleAuth() {
-            if(state.user) auth.signOut();
-            else auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => alert(e.message));
+            if(state.user) {
+                auth.signOut();
+            } else {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                auth.signInWithPopup(provider).catch(e => {
+                    console.error(e);
+                    alert("Login failed: " + e.message);
+                });
+            }
         }
 
         function updateAuthUI() {
             const btn = document.getElementById('authBtn');
+            const name = document.getElementById('user-name');
             const avatar = document.getElementById('user-avatar');
             
             if(state.user) {
-                btn.innerText = "Exit"; 
+                btn.innerText = "Logout";
+                name.innerText = state.user.displayName.split(' ')[0];
                 avatar.src = state.user.photoURL;
                 avatar.style.display = 'block';
             } else {
-                btn.innerText = "Login";
+                btn.innerText = "Login with Google";
+                name.innerText = "Guest";
                 avatar.style.display = 'none';
             }
         }
@@ -257,24 +263,25 @@
         async function loadUserData(uid) {
             document.getElementById('cloud-loader').style.width = '70%';
             try {
-                const doc = await db.collection('users').doc(uid).get();
+                const docRef = db.collection('users').doc(uid);
+                const doc = await docRef.get();
                 if(doc.exists) {
                     const data = doc.data();
                     if(data.cfHandle) {
                         document.getElementById('handleInput').value = data.cfHandle;
                         localStorage.setItem('cf_handle', data.cfHandle);
-                        syncUser(false); 
+                        syncUser(false); // Clean sync on load
                     }
                     if(data.bookmarks) {
                         state.bookmarks = new Map(Object.entries(data.bookmarks));
                         localStorage.setItem('cf_bookmarks_map', JSON.stringify([...state.bookmarks]));
                     }
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Cloud Load Error:", e); }
             document.getElementById('cloud-loader').style.width = '0%';
         }
 
-        // --- 5. DATA & SYNC ---
+        // --- 5. CORE FUNCTIONALITY ---
         async function fetchContests() {
             try {
                 const res = await fetch(API_CONTESTS);
@@ -284,40 +291,48 @@
                     localStorage.setItem('cf_cache_contests', JSON.stringify(state.allContests));
                     applyFilters();
                 }
-            } catch(e) {}
+            } catch(e) { console.log("Using cached contests", e); }
         }
 
+        // --- SYNC: COMPLETELY WIPES OLD ATTEMPTED DATA ---
         async function syncUser(showUI=true) {
             const h = document.getElementById('handleInput').value; if(!h) return;
             localStorage.setItem('cf_handle', h);
+            
             if(state.user) db.collection('users').doc(state.user.uid).set({ cfHandle: h }, { merge: true });
 
-            const btn = document.getElementById('syncBtn'); 
-            if(showUI) btn.innerText = "...";
-            
+            const btn = document.getElementById('syncBtn'); if(showUI) btn.innerText = "...";
             try {
                 const res = await fetch(`${API_USER}?handle=${h}`);
                 const data = await res.json();
                 if(data.status === 'OK') {
-                    // HARD RESET
+                    // 1. HARD RESET ALL DATA
                     state.solved.clear();
-                    state.attemptedContests.clear();
-                    localStorage.removeItem('cf_cache_solved');
-                    localStorage.removeItem('cf_cache_attempted_contests');
+                    state.attemptedContests.clear(); // Clear old user's history
                     
+                    localStorage.removeItem('cf_cache_solved');
+                    localStorage.removeItem('cf_cache_attempted_contests'); // Clear old cache
+                    
+                    // 2. Clear UI Visuals
                     document.querySelectorAll('.problem-row.solved').forEach(row => {
                         row.classList.remove('solved');
                         row.querySelector('.p-status').innerText = '';
                     });
 
+                    // 3. Process New Data
                     data.result.forEach(s => { 
+                        // Track Attempts
                         state.attemptedContests.add(s.contestId);
+                        
+                        // Track Solves
                         if(s.verdict === 'OK') state.solved.add(`${s.contestId}${s.problem.index}`); 
                     });
                     
+                    // 4. Save New Data
                     localStorage.setItem('cf_cache_solved', JSON.stringify([...state.solved]));
                     localStorage.setItem('cf_cache_attempted_contests', JSON.stringify([...state.attemptedContests]));
                     
+                    // 5. Re-apply Visuals
                     document.querySelectorAll('.problem-row').forEach(row => {
                         const pid = row.id.replace('row-', '');
                         if(state.solved.has(pid)) { 
@@ -325,24 +340,34 @@
                             row.querySelector('.p-status').innerText = '✅'; 
                         }
                     });
+                    
+                    // 6. Refresh Filter (In case "Attempted Only" is on)
                     applyFilters();
-                    if(showUI) btn.innerText = "✓";
+
+                    if(showUI) btn.innerText = "Done";
                 }
-            } catch(e) { if(showUI) btn.innerText = "!"; }
-            setTimeout(() => btn.innerText = "↻", 2000);
+            } catch(e) { if(showUI) btn.innerText = "Err"; }
+            setTimeout(() => btn.innerText = "Sync Status", 2000);
         }
 
-        // --- FILTERS & LISTS ---
+        // --- FILTER LOGIC (Updated for Attempts) ---
         function applyFilters() {
             const onlyStandard = document.getElementById('roundFilter').checked;
             const onlyAttempted = document.getElementById('attemptedFilter').checked;
 
             state.filteredContests = state.allContests.filter(c => {
+                // Filter 1: Standard Rounds
                 if(onlyStandard) {
                     const n = c.name;
-                    if(!((n.includes("Codeforces Round") || n.includes("Educational")) && !n.includes("Hello") && !n.includes("Good Bye") && !n.includes("ICPC"))) return false;
+                    const isStandard = (n.includes("Codeforces Round") || n.includes("Educational")) && !n.includes("Hello") && !n.includes("Good Bye") && !n.includes("ICPC");
+                    if(!isStandard) return false;
                 }
-                if(onlyAttempted && !state.attemptedContests.has(c.id)) return false;
+
+                // Filter 2: Attempted Only
+                if(onlyAttempted) {
+                    if(!state.attemptedContests.has(c.id)) return false;
+                }
+
                 return true;
             });
             document.querySelectorAll('.contest-card').forEach(e => e.remove());
@@ -372,15 +397,16 @@
             const card = header.parentElement;
             const body = card.querySelector('.contest-body');
             const cacheKey = `cf_contest_${cid}`;
-            
+            const cachedProblems = localStorage.getItem(cacheKey);
+
             if(card.classList.toggle('open')) {
-                const cached = localStorage.getItem(cacheKey);
-                if(cached) {
-                    body.dataset.problems = cached;
+                if(cachedProblems) {
+                    body.dataset.problems = cachedProblems;
                     renderProblems(body, cid);
                     body.dataset.loaded = "true";
                 }
-                if(!cached) {
+                
+                if(!cachedProblems) {
                     body.innerHTML = '<div style="padding:10px; text-align:center">Loading...</div>';
                     try {
                         const res = await fetch(`https://codeforces.com/api/contest.standings?contestId=${cid}&from=1&count=1`);
@@ -407,7 +433,7 @@
             const isSolved = state.solved.has(pid);
             const isBookmarked = state.bookmarks.has(pid);
             const hasNote = localStorage.getItem(`cf_note_${pid}`) ? 'has-note' : '';
-            const topics = (p.tags || []).map(t => `<span class="topic-pill">${t}</span>`).join('');
+            const topicsHtml = (p.tags || []).map(t => `<span class="topic-pill">${t}</span>`).join('');
             const cleanName = p.name.replace(/'/g,"");
 
             return `
@@ -416,26 +442,29 @@
                     <div class="p-index">${p.index}</div>
                     <div class="p-content">
                         <div class="p-name">${p.name}</div>
-                        <div class="topic-list">${topics}</div>
+                        <div class="topic-list">${topicsHtml}</div>
                     </div>
                     <div class="p-rating">${p.rating ? `<span class="rating-badge">${p.rating}</span>` : ''}</div>
                     <div class="p-actions">
-                        <button class="icon-btn vscode" onclick="sendToCPH(${cid}, '${p.index}', '${cleanName}')" title="CPH">⚡</button>
-                        <button class="icon-btn ${isBookmarked ? 'starred' : ''}" onclick="toggleBookmark('${pid}', ${cid}, '${p.index}', '${cleanName}', ${p.rating||0}, '${(p.tags||[]).join(",")}')">★</button>
+                        <button class="icon-btn vscode" onclick="sendToCPH(${cid}, '${p.index}', '${cleanName}')" title="Open in VSCode">⚡</button>
+                        <button class="icon-btn ${isBookmarked ? 'starred' : ''}" 
+                                onclick="toggleBookmark('${pid}', ${cid}, '${p.index}', '${cleanName}', ${p.rating||0}, '${(p.tags||[]).join(",")}')">★</button>
                         <button class="icon-btn ${hasNote}" onclick="openEditor('${pid}', ${cid}, '${p.index}', '${cleanName}')">✎</button>
                         <a href="https://codeforces.com/contest/${cid}/problem/${p.index}" target="_blank" class="icon-btn">↗</a>
                     </div>
                 </div>`;
         }
 
-        // --- BOOKMARKS & EDITOR ---
+        // --- 6. BOOKMARKS ---
         function toggleBookmark(pid, cid, idx, name, rating, tags) {
             if(state.bookmarks.has(pid)) state.bookmarks.delete(pid);
             else state.bookmarks.set(pid, { cid, idx, name, rating, tags: tags ? tags.split(',') : [] });
             
             localStorage.setItem('cf_bookmarks_map', JSON.stringify([...state.bookmarks]));
-            if(state.user) db.collection('users').doc(state.user.uid).set({ bookmarks: Object.fromEntries(state.bookmarks) }, { merge: true });
-            
+            if(state.user) {
+                const bmObj = Object.fromEntries(state.bookmarks);
+                db.collection('users').doc(state.user.uid).set({ bookmarks: bmObj }, { merge: true });
+            }
             const row = document.getElementById(`row-${pid}`);
             if(row) row.querySelector('.p-actions button:nth-child(2)').classList.toggle('starred');
             if(state.viewMode === 'bookmarks') renderBookmarks();
@@ -451,7 +480,7 @@
 
         function renderBookmarks() {
             const list = document.getElementById('bookmark-list');
-            let html = '<div style="padding:10px; font-weight:bold; font-size:0.9rem;">Bookmarks</div>';
+            let html = '<div style="padding:15px; font-weight:bold;">Saved Problems</div>';
             state.bookmarks.forEach((val, pid) => {
                 const p = { index: val.idx, name: val.name, rating: val.rating, tags: val.tags };
                 html += createProblemHTML(p, val.cid);
@@ -459,29 +488,33 @@
             list.innerHTML = html;
         }
 
+        // --- 7. EDITOR & NOTES ---
         async function openEditor(pid, cid, idx, name) {
             state.activeProblem = { id: pid, cid, idx, name };
             document.getElementById('empty-state').style.display = 'none';
             document.getElementById('editor-container').style.display = 'flex';
             document.getElementById('active-title').innerText = `${idx}. ${name}`;
             
-            let content = localStorage.getItem(`cf_note_${pid}`) || `// ${name}\n#include <bits/stdc++.h>\nusing namespace std;\n\nvoid solve() {\n    \n}\n\nint main() {\n    ios::sync_with_stdio(0); cin.tie(0);\n    int t; cin >> t;\n    while(t--) solve();\n}`;
-            editor.setValue(content);
+            let content = localStorage.getItem(`cf_note_${pid}`);
+            if(content) editor.setValue(content);
+            else editor.setValue(`// ${name}\n#include <bits/stdc++.h>\nusing namespace std;\n\nvoid solve() {\n    \n}\n\nint main() {\n    ios::sync_with_stdio(0); cin.tie(0);\n    int t; cin >> t;\n    while(t--) solve();\n}`);
 
             if(state.user) {
-                const note = await db.collection('users').doc(state.user.uid).collection('notes').doc(pid).get();
-                if(note.exists && !localStorage.getItem(`cf_note_${pid}`)) editor.setValue(note.data().content);
+                const noteRef = db.collection('users').doc(state.user.uid).collection('notes').doc(pid);
+                noteRef.get().then(doc => {
+                    if(doc.exists && !content) editor.setValue(doc.data().content);
+                });
             }
             setTimeout(() => editor.refresh(), 10);
         }
 
         editor.on('change', () => {
             if(state.activeProblem) {
-                const content = editor.getValue();
                 const pid = state.activeProblem.id;
+                const content = editor.getValue();
                 localStorage.setItem(`cf_note_${pid}`, content);
                 document.getElementById('save-indicator').innerText = "Saving...";
-                if(state.user) db.collection('users').doc(state.user.uid).collection('notes').doc(pid).set({ content }, { merge: true });
+                if(state.user) db.collection('users').doc(state.user.uid).collection('notes').doc(pid).set({ content: content }, { merge: true });
                 setTimeout(() => document.getElementById('save-indicator').innerText = "Saved", 500);
             }
         });
@@ -492,14 +525,18 @@
             document.getElementById('empty-state').style.display = 'flex';
         }
 
-        // --- UTILS ---
+        // --- 8. UTILS & SUBMIT ---
         function copyCode() { navigator.clipboard.writeText(editor.getValue()); }
+        
         function submitToCF() {
             if(state.activeProblem) {
                 copyCode();
-                window.open(`https://codeforces.com/contest/${state.activeProblem.cid}/submit?problemIndex=${state.activeProblem.idx}`, '_blank');
+                // Direct Deep-Link to Submit Page
+                const submitUrl = `https://codeforces.com/contest/${state.activeProblem.cid}/submit?problemIndex=${state.activeProblem.idx}`;
+                window.open(submitUrl, '_blank');
             }
         }
+
         function toggleTheme() {
             const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', next);
@@ -513,6 +550,7 @@
             document.addEventListener('mousemove', e => { if(resizing) s.style.width = Math.max(300, Math.min(800, e.clientX)) + 'px'; });
             document.addEventListener('mouseup', () => { resizing = false; document.body.style.cursor = 'default'; });
         }
+
         async function sendToCPH(contestId, index, name) {
             const url = `https://codeforces.com/contest/${contestId}/problem/${index}`;
             const btn = document.activeElement;
@@ -523,7 +561,8 @@
                 const response = await fetch(proxyUrl);
                 const data = await response.json();
                 if(!data.contents) throw new Error("Proxy Failed");
-                const doc = new DOMParser().parseFromString(data.contents, "text/html");
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data.contents, "text/html");
                 const inputs = doc.querySelectorAll(".input pre");
                 const outputs = doc.querySelectorAll(".output pre");
                 let tests = [];
@@ -539,7 +578,7 @@
                     })
                 });
                 btn.innerHTML = '✅';
-            } catch (err) { btn.innerHTML = '❌'; }
+            } catch (err) { console.error(err); alert("Failed. Ensure VS Code + CPH Extension is Open."); btn.innerHTML = '❌'; }
             setTimeout(() => btn.innerHTML = originalText, 2000);
         }
 
