@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CF Tracker Pro v27 (Deep Search)</title>
+    <title>CF Tracker Pro v28 (User Stats)</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/ayu-mirage.min.css">
@@ -25,7 +25,7 @@
             --danger: #f85149; --gold: #e3b341; --vscode: #007acc; --tag-bg: #1f2428;
             --progress-fill: rgba(35, 134, 54, 0.4); --progress-bg: #21262d;
             --tab-active-bg: #1f2428; --tab-inactive-bg: #161b22;
-            --highlight: rgba(210, 153, 34, 0.3); /* Search Highlight */
+            --highlight: rgba(210, 153, 34, 0.3);
         }
         :root[data-theme="light"] {
             --bg-main: #ffffff; --bg-sidebar: #f6f8fa; --bg-card: #ffffff;
@@ -37,11 +37,19 @@
             --highlight: rgba(210, 153, 34, 0.3);
         }
 
+        /* Codeforces Rating Colors */
+        .u-gray { background-color: #808080; color: white; }
+        .u-green { background-color: #008000; color: white; }
+        .u-cyan { background-color: #03a89e; color: white; }
+        .u-blue { background-color: #0000ff; color: white; }
+        .u-violet { background-color: #aa00aa; color: white; }
+        .u-orange { background-color: #ff8c00; color: white; }
+        .u-red { background-color: #ff0000; color: white; }
+
         * { box-sizing: border-box; outline: none; }
         body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-main); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
 
         #sidebar { width: 480px; background: var(--bg-sidebar); display: flex; flex-direction: column; flex-shrink: 0; border-right: 1px solid var(--border); position: relative; }
-        
         .header-panel { padding: 10px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); display: flex; flex-direction: column; gap: 8px; }
         .top-row { display: flex; justify-content: space-between; align-items: center; height: 28px; }
         .brand { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 6px; }
@@ -50,11 +58,14 @@
         
         .control-row { display: flex; gap: 6px; height: 32px; }
         input[type="text"] { background: var(--bg-main); border: 1px solid var(--border); color: var(--text-primary); padding: 4px 10px; border-radius: 6px; flex: 1; font-size: 0.9rem; }
-        
-        /* New Search Bar */
-        .search-row { display: flex; height: 32px; margin-top: 2px; }
-        #problemSearch { width: 100%; border-color: var(--border); }
+        #problemSearch { border-color: var(--border); }
         #problemSearch:focus { border-color: var(--gold); }
+
+        /* USER INFO ROW (NEW) */
+        #user-info-row { display: none; align-items: center; gap: 8px; font-size: 0.8rem; margin-top: -4px; margin-bottom: 2px; }
+        #rating-pill { padding: 1px 6px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; }
+        #profile-link { text-decoration: none; color: var(--text-secondary); display: flex; align-items: center; gap: 3px; }
+        #profile-link:hover { color: var(--accent); }
 
         .btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); padding: 0 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; }
         .btn:hover { background: var(--bg-hover); }
@@ -76,10 +87,8 @@
         .problem-row { display: grid; grid-template-columns: 24px 35px 1fr 60px; align-items: start; padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); gap: 8px; transition: background 0.5s; }
         .problem-row:hover { background: var(--bg-hover); }
         .problem-row.solved { border-left: 3px solid var(--success); background: rgba(35, 134, 54, 0.08); }
-        
-        /* Search Highlight Animation */
-        @keyframes flashHighlight { 0% { background: var(--highlight); } 100% { background: var(--bg-sidebar); } }
         .problem-row.highlight-row { animation: flashHighlight 2s ease-out; border-left: 3px solid var(--gold); }
+        @keyframes flashHighlight { 0% { background: var(--highlight); } 100% { background: var(--bg-sidebar); } }
 
         .p-status { text-align: center; padding-top: 2px; }
         .p-index { font-weight: bold; color: var(--accent); padding-top: 2px; }
@@ -97,7 +106,6 @@
 
         #main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-main); }
         #editor-container { display: none; flex-direction: column; height: 100%; }
-        
         .editor-header { background: var(--bg-sidebar); border-bottom: 1px solid var(--border); display: flex; flex-direction: column; }
         .editor-tabs { display: flex; gap: 2px; padding: 0 10px; margin-top: 10px; }
         .tab-btn { padding: 6px 15px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border-radius: 6px 6px 0 0; background: var(--tab-inactive-bg); border: 1px solid var(--border); border-bottom: none; opacity: 0.7; }
@@ -125,14 +133,22 @@
                     <button class="btn btn-sm" onclick="toggleTheme()" title="Theme">🌙</button>
                 </div>
             </div>
+            
             <div class="control-row">
                 <input type="text" id="handleInput" placeholder="Handle" onchange="syncUser()">
                 <button class="btn btn-primary" id="syncBtn" onclick="syncUser()" title="Sync">↻</button>
                 <button class="btn" id="bmBtn" onclick="toggleBookmarksView()" title="Bookmarks">★</button>
             </div>
-            <div class="search-row">
-                <input type="text" id="problemSearch" placeholder="Search Problem (e.g. 4A, 1600B)" onkeyup="if(event.key === 'Enter') searchProblem()">
+
+            <div id="user-info-row">
+                <span id="rating-pill"></span>
+                <a id="profile-link" href="#" target="_blank">↗ Profile</a>
             </div>
+
+            <div class="control-row" style="margin-top:2px;">
+                <input type="text" id="problemSearch" placeholder="Search (e.g. 4A, 1600B)" onkeyup="if(event.key === 'Enter') searchProblem()">
+            </div>
+
             <div class="filter-row">
                 <label class="filter-item"><input type="checkbox" id="roundFilter" checked onchange="applyFilters()"> Standard</label>
                 <label class="filter-item" style="color:var(--accent);"><input type="checkbox" id="attemptedFilter" onchange="applyFilters()"> Attempted</label>
@@ -186,6 +202,7 @@
 
         const API_CONTESTS = 'https://codeforces.com/api/contest.list';
         const API_USER = 'https://codeforces.com/api/user.status';
+        const API_INFO = 'https://codeforces.com/api/user.info';
 
         let state = {
             allContests: JSON.parse(localStorage.getItem('cf_cache_contests') || '[]'),
@@ -224,7 +241,11 @@
             });
 
             const h = localStorage.getItem('cf_handle');
-            if(h) document.getElementById('handleInput').value = h;
+            if(h) {
+                document.getElementById('handleInput').value = h;
+                // Fetch info if handle exists but no UI update yet
+                fetchUserInfo(h);
+            }
 
             const obs = new IntersectionObserver(e => { if(e[0].isIntersecting && state.viewMode === 'contests') renderNextBatch(); }, { rootMargin: '200px' });
             obs.observe(document.getElementById('sentinel'));
@@ -277,6 +298,10 @@
             if(state.user) db.collection('users').doc(state.user.uid).set({ cfHandle: h }, { merge: true });
 
             const btn = document.getElementById('syncBtn'); if(showUI) btn.innerText = "...";
+            
+            // Fetch User Info (Rating/Rank)
+            fetchUserInfo(h);
+
             try {
                 const res = await fetch(`${API_USER}?handle=${h}`);
                 const data = await res.json();
@@ -313,56 +338,67 @@
             setTimeout(() => btn.innerText = "↻", 2000);
         }
 
-        // --- PROBLEM SEARCH ENGINE ---
+        // --- NEW: FETCH USER INFO ---
+        async function fetchUserInfo(handle) {
+            try {
+                const res = await fetch(`${API_INFO}?handles=${handle}`);
+                const data = await res.json();
+                if(data.status === 'OK' && data.result.length > 0) {
+                    const u = data.result[0];
+                    const pill = document.getElementById('rating-pill');
+                    const row = document.getElementById('user-info-row');
+                    const link = document.getElementById('profile-link');
+                    
+                    // Rating Logic
+                    const r = u.rating || 0;
+                    pill.innerText = `${u.rank || 'user'} (${r})`;
+                    
+                    // Reset Classes
+                    pill.className = 'rating-pill'; // Base class
+                    if (r < 1200) pill.classList.add('u-gray');
+                    else if (r < 1400) pill.classList.add('u-green');
+                    else if (r < 1600) pill.classList.add('u-cyan');
+                    else if (r < 1900) pill.classList.add('u-blue');
+                    else if (r < 2100) pill.classList.add('u-violet');
+                    else if (r < 2400) pill.classList.add('u-orange');
+                    else pill.classList.add('u-red');
+
+                    link.href = `https://codeforces.com/profile/${handle}`;
+                    row.style.display = 'flex';
+                }
+            } catch(e) { console.error("User info fail", e); }
+        }
+
+        // --- SEARCH PROBLEM ---
         async function searchProblem() {
             const query = document.getElementById('problemSearch').value.trim().toUpperCase();
             if(!query) return;
-
-            // Regex to parse "1600B" -> 1600, B
             const match = query.match(/^(\d+)([A-Z]\d*)$/);
             if(!match) { alert("Invalid Format. Use 4A, 1600B"); return; }
-
             const cid = parseInt(match[1]);
             const index = match[2];
             const pid = `${cid}${index}`;
-
-            // Check if contest exists
             const contestExists = state.allContests.find(c => c.id === cid);
             if(!contestExists) { alert("Contest " + cid + " not found."); return; }
-
-            // 1. Isolate the contest in view
             state.filteredContests = [contestExists];
             document.querySelectorAll('.contest-card').forEach(e => e.remove());
             state.renderedCount = 0;
-            
-            // 2. Render only this contest
             const list = document.getElementById('contest-list');
             const card = document.createElement('div');
             card.className = 'contest-card';
             card.dataset.cid = cid;
-            card.innerHTML = `
-                <div class="contest-header" onclick="toggleContest(this, ${cid})">
-                    <span style="font-weight:500;">${contestExists.name}</span>
-                    <span class="tag" style="background:var(--tag-bg); padding:2px 6px; border-radius:4px; font-size:0.75rem;">#${cid}</span>
-                </div>
-                <div class="contest-body" data-loaded="false"></div>`;
-            list.appendChild(card); // Direct append since we cleared others
-
-            // 3. Open it immediately
+            card.innerHTML = `<div class="contest-header" onclick="toggleContest(this, ${cid})"><span style="font-weight:500;">${contestExists.name}</span><span class="tag" style="background:var(--tag-bg); padding:2px 6px; border-radius:4px; font-size:0.75rem;">#${cid}</span></div><div class="contest-body" data-loaded="false"></div>`;
+            list.appendChild(card);
             const header = card.querySelector('.contest-header');
             await toggleContest(header, cid);
-
-            // 4. Scroll to problem and Highlight
             setTimeout(() => {
                 const row = document.getElementById(`row-${pid}`);
                 if(row) {
                     row.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     row.classList.add('highlight-row');
                     setTimeout(() => row.classList.remove('highlight-row'), 2500);
-                } else {
-                    alert(`Problem ${index} not found in Contest ${cid}`);
-                }
-            }, 500); // Small delay for render to finish
+                } else { alert(`Problem ${index} not found in Contest ${cid}`); }
+            }, 500);
         }
 
         function startBackgroundProgressFetch() {
@@ -524,7 +560,6 @@
             state.currentTab = tabName;
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`tab-${tabName}`).classList.add('active');
-            
             document.getElementById('view-sub-btn').style.display = (tabName === 'solution') ? 'block' : 'none';
 
             if(tabName === 'notes') {
@@ -536,11 +571,8 @@
                 editor.setOption("readOnly", true);
                 editor.setValue("// Loading Solution...");
                 const subId = state.submissionMap.get(state.activeProblem.id);
-                if(subId) {
-                    fetchSolutionCode(state.activeProblem.cid, subId);
-                } else {
-                    editor.setValue("// No solution found.\n// Make sure to Click 'Sync Status' so we can fetch your latest submission IDs.");
-                }
+                if(subId) fetchSolutionCode(state.activeProblem.cid, subId);
+                else editor.setValue("// No solution found.\n// Make sure to Click 'Sync Status' so we can fetch your latest submission IDs.");
             }
         }
 
@@ -556,9 +588,7 @@
                 if(code) {
                     editor.setValue(code.innerText);
                     document.getElementById('save-indicator').innerText = "Solution Loaded";
-                } else {
-                    editor.setValue("// Could not parse code.\n// Codeforces might be blocking the proxy.\n// Use the 'View on CF' button above.");
-                }
+                } else { editor.setValue("// Could not parse code.\n// Codeforces might be blocking the proxy.\n// Use the 'View on CF' button above."); }
             } catch(e) { editor.setValue("// Error fetching code.\n// Use the 'View on CF' button above."); }
         }
         
@@ -573,9 +603,7 @@
             document.getElementById('empty-state').style.display = 'none';
             document.getElementById('editor-container').style.display = 'flex';
             document.getElementById('active-title').innerText = `${idx}. ${name}`;
-            
             switchTab('notes');
-
             if(state.user) {
                 const noteRef = db.collection('users').doc(state.user.uid).collection('notes').doc(pid);
                 noteRef.get().then(doc => {
@@ -595,19 +623,15 @@
             if(state.activeProblem && state.currentTab === 'notes') {
                 const content = editor.getValue();
                 const pid = state.activeProblem.id;
-                
                 localStorage.setItem(`cf_note_${pid}`, content);
                 document.getElementById('save-indicator').innerText = "Saving...";
-                
                 clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(() => {
                     if(state.user) {
                         db.collection('users').doc(state.user.uid).collection('notes').doc(pid).set({ content }, { merge: true })
                         .then(() => document.getElementById('save-indicator').innerText = "Saved")
                         .catch(() => document.getElementById('save-indicator').innerText = "Save Failed");
-                    } else {
-                        document.getElementById('save-indicator').innerText = "Saved Locally";
-                    }
+                    } else { document.getElementById('save-indicator').innerText = "Saved Locally"; }
                 }, 1000);
             }
         });
