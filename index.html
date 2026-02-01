@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CF Tracker Pro v36 (Smart Terminal & UI)</title>
+    <title>CF Tracker Pro v37 (Stable Core)</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/ayu-mirage.min.css">
@@ -19,7 +19,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/clike/clike.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/edit/closebrackets.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/comment/comment.min.js"></script>
 
     <style>
         :root[data-theme="dark"] {
@@ -43,9 +42,9 @@
 
         * { box-sizing: border-box; outline: none; }
         body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-main); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
-        
-        /* --- SIDEBAR --- */
-        #sidebar { width: 400px; min-width: 250px; max-width: 600px; background: var(--bg-sidebar); display: flex; flex-direction: column; flex-shrink: 0; position: relative; z-index: 50; transition: transform 0.3s ease; border-right: 1px solid var(--border); }
+
+        /* SIDEBAR */
+        #sidebar { width: 400px; background: var(--bg-sidebar); display: flex; flex-direction: column; flex-shrink: 0; position: relative; z-index: 50; transition: transform 0.3s ease; border-right: 1px solid var(--border); }
         #sidebar.collapsed { transform: translateX(-100%); margin-right: -400px; }
         
         .header-panel { padding: 10px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); display: flex; flex-direction: column; gap: 8px; }
@@ -57,24 +56,17 @@
         .control-row { display: flex; gap: 6px; height: 32px; }
         input[type="text"] { background: var(--bg-main); border: 1px solid var(--border); color: var(--text-primary); padding: 4px 10px; border-radius: 6px; flex: 1; font-size: 0.9rem; }
         
-        /* --- BUTTONS IMPROVED --- */
-        .btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        .btn:hover { background: var(--bg-hover); transform: translateY(-1px); }
-        .btn:active { transform: translateY(0); }
-        
+        /* Buttons */
+        .btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; white-space: nowrap; }
+        .btn:hover { background: var(--bg-hover); }
         .btn-primary { background: #238636; border-color: rgba(27,31,36,0.15); color: white; }
-        .btn-primary:hover { background: #2ea043; }
-        
         .btn-run { background: #1f6feb; border-color: rgba(27,31,36,0.15); color: white; min-width: 90px; }
         .btn-run:hover { background: #388bfd; }
         .btn-run:disabled { background: #388bfd; opacity: 0.7; cursor: wait; }
-
         .btn-danger { color: var(--danger); border-color: var(--border); }
-        .btn-danger:hover { border-color: var(--danger); background: var(--bg-main); }
-
         .btn-sm { font-size: 0.75rem; padding: 2px 10px; height: 24px; }
 
-        /* Filter & Contest List */
+        /* Lists & Filters */
         .filter-row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px; flex-wrap: wrap;}
         #divFilter { background: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border); border-radius: 4px; padding: 2px 4px; font-size: 0.8rem; height: 24px; cursor: pointer; }
         #bg-stats { font-size: 0.75rem; color: var(--accent); margin-top: 2px; height: 14px; white-space: nowrap; overflow: hidden; }
@@ -103,7 +95,7 @@
         .resizer { width: 5px; background: var(--bg-sidebar); cursor: col-resize; z-index: 100; border-left: 1px solid var(--border); border-right: 1px solid var(--border); transition: background 0.2s; flex-shrink: 0; }
         .resizer:hover { background: var(--accent); }
 
-        /* --- EDITOR LAYOUT --- */
+        /* EDITOR AREA */
         #main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-main); position: relative; overflow: hidden; }
         #empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-secondary); }
         #cloud-loader { height: 2px; background: linear-gradient(90deg, var(--accent), var(--success)); width: 0%; position: absolute; top: 0; left: 0; z-index: 200; transition: 0.3s; }
@@ -128,14 +120,13 @@
         #preview-content pre { background: var(--bg-sidebar); padding: 10px; border-radius: 6px; border: 1px solid var(--border); font-family: monospace; white-space: pre-wrap; }
         #preview-content img { max-width: 100%; }
 
-        /* --- SMART TERMINAL STYLES --- */
+        /* SMART TERMINAL */
         .terminal-layout { display: flex; flex-direction: column; height: 100%; gap: 10px; }
         .term-section { display: flex; flex-direction: column; flex: 1; min-height: 0; }
         .term-label { font-size: 0.75rem; font-weight: bold; color: var(--text-secondary); margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
         
         textarea.io-area { flex: 1; background: var(--bg-sidebar); border: 1px solid var(--border); color: var(--text-primary); font-family: 'Fira Code', monospace; padding: 10px; resize: none; border-radius: 4px; }
         
-        /* Diff Output Container */
         .output-container { flex: 1; background: var(--bg-sidebar); border: 1px solid var(--border); color: var(--text-primary); font-family: 'Fira Code', monospace; padding: 10px; overflow-y: auto; border-radius: 4px; white-space: pre-wrap; font-size: 0.9rem; }
         
         .status-badge { padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
@@ -193,6 +184,7 @@
                     <option value="Div. 3">Div 3</option>
                     <option value="Div. 4">Div 4</option>
                     <option value="Educational">Educational</option>
+                    <option value="Global">Global</option>
                 </select>
                 <label class="filter-item"><input type="checkbox" id="roundFilter" checked onchange="applyFilters()"> Std.</label>
                 <label class="filter-item" style="color:var(--accent);"><input type="checkbox" id="attemptedFilter" onchange="applyFilters()"> Attempted</label>
@@ -213,7 +205,7 @@
             <h2>Select a Problem</h2>
             <p id="cloud-status" style="margin-top:10px; font-size:0.9rem;">☁️ Login to sync notes</p>
             <div style="margin-top:20px; font-size:0.8rem; color:var(--text-secondary);">
-                <span>⌨️ <b>Ctrl + Enter</b> to Run</span> &bull; <span><b>Ctrl + /</b> to Comment</span>
+                <span>⌨️ <b>Ctrl + Enter</b> to Run</span>
             </div>
         </div>
 
@@ -314,17 +306,14 @@
             contestTotals: new Map(JSON.parse(localStorage.getItem('cf_cache_totals') || '[]')), 
             bookmarks: new Map(), activeProblem: null, viewMode: 'contests', user: null,
             bgFetchQueue: [], currentLeftTab: 'code', currentRightTab: 'preview',
-            expectedOutput: "" // Stores expected output for diff
+            expectedOutput: "" 
         };
 
-        // Initialize CodeMirror with Keymaps
         const editor = CodeMirror.fromTextArea(document.getElementById("code-editor"), {
             mode: "text/x-c++src", lineNumbers: true, autoCloseBrackets: true,
             extraKeys: {
                 "Ctrl-Enter": function(cm) { runCode(); },
-                "Cmd-Enter": function(cm) { runCode(); },
-                "Ctrl-/": "toggleComment",
-                "Cmd-/": "toggleComment"
+                "Cmd-Enter": function(cm) { runCode(); }
             }
         });
 
@@ -354,7 +343,74 @@
             initResizers();
         }
 
-        // --- TERMINAL & DIFF LOGIC ---
+        // --- NEW: RELIABLE FETCHING ---
+        async function fetchWithFallback(url) {
+            // Priority: AllOrigins (JSON) -> CorsProxy (Raw) -> Local (if direct possible)
+            try {
+                // Try AllOrigins first
+                const res1 = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+                const data1 = await res1.json();
+                if(data1.contents) return data1.contents;
+            } catch(e) {}
+
+            try {
+                // Try CORS Proxy
+                const res2 = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+                const text2 = await res2.text();
+                if(text2 && text2.length > 100) return text2;
+            } catch(e) {}
+
+            throw new Error("Fetch Failed");
+        }
+
+        async function loadProblemPreview(cid, index) {
+            const previewDiv = document.getElementById('preview-content');
+            previewDiv.innerHTML = '<div style="padding:20px; text-align:center;">Fetching...</div>';
+            state.expectedOutput = ""; 
+            
+            const url = `https://codeforces.com/contest/${cid}/problem/${index}`;
+
+            try {
+                const htmlContent = await fetchWithFallback(url);
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlContent, 'text/html');
+                
+                // Anti-Bot Check
+                if(doc.title.includes("Just a moment") || doc.body.innerText.includes("security check")) { 
+                    throw new Error("Cloudflare"); 
+                }
+
+                const statement = doc.querySelector('.problem-statement') || doc.querySelector('.ttypography');
+                
+                if(statement) {
+                    statement.querySelectorAll('img').forEach(img => {
+                        const src = img.getAttribute('src');
+                        if(src && src.startsWith('/')) img.src = 'https://codeforces.com' + src;
+                    });
+                    
+                    previewDiv.innerHTML = statement.innerHTML;
+                    if(window.MathJax) MathJax.typesetPromise([previewDiv]);
+
+                    // Parse I/O
+                    const inputPre = statement.querySelector('.input pre');
+                    const outputPre = statement.querySelector('.output pre');
+                    if(inputPre) document.getElementById('term-input').value = inputPre.innerText;
+                    if(outputPre) {
+                        state.expectedOutput = outputPre.innerText;
+                        document.getElementById('term-output').innerText = "Run code to check against sample case...";
+                        document.getElementById('term-status').innerHTML = "";
+                    }
+                } else throw new Error("Parse Error");
+            } catch(e) {
+                previewDiv.innerHTML = `<div style="text-align:center; padding:20px;">
+                    <h3>Could not load preview.</h3>
+                    <p>Codeforces is blocking requests.</p>
+                    <button class="btn" onclick="openExternalProblem()">Open in CF</button>
+                </div>`;
+            }
+        }
+
+        // --- NEW: ROBUST RUNNER ---
         async function runCode() {
             switchRightTab('terminal'); 
             const btn = document.getElementById('runBtn');
@@ -380,26 +436,27 @@
                 const data = await res.json();
                 
                 let html = "";
-                // Compilation Error
+                // Priority 1: Compile Error
                 if(data.compile && data.compile.stderr) {
                     html += `<div style="color:var(--danger); font-weight:bold;">COMPILATION ERROR:</div>`;
                     html += `<div class="raw-output">${data.compile.stderr}</div>`;
                     statusSpan.innerHTML = '<span class="status-badge status-err">Error</span>';
                 } 
-                // Runtime Output
+                // Priority 2: Runtime
                 else if(data.run) {
                     if(data.run.stderr) {
                         html += `<div style="color:var(--danger); font-weight:bold;">RUNTIME ERROR:</div>`;
                         html += `<div class="raw-output">${data.run.stderr}</div>`;
                         statusSpan.innerHTML = '<span class="status-badge status-err">Error</span>';
                     } else {
+                        // Success Case
                         const actual = (data.run.stdout || "").trim();
                         const expected = state.expectedOutput ? state.expectedOutput.trim() : "";
                         
                         if(expected) {
                             if(actual === expected) {
                                 html += `<div style="color:var(--success); font-weight:bold;">✅ MATCH</div>`;
-                                html += `<div class="raw-output">${data.run.stdout}</div>`;
+                                html += `<div class="raw-output">${actual}</div>`;
                                 statusSpan.innerHTML = '<span class="status-badge status-ok">Passed</span>';
                             } else {
                                 html += `<div class="diff-block"><div class="diff-label">YOUR OUTPUT</div><div class="diff-val-actual">${actual || "[No Output]"}</div></div>`;
@@ -407,61 +464,20 @@
                                 statusSpan.innerHTML = '<span class="status-badge status-err">Wrong Answer</span>';
                             }
                         } else {
-                            html += `<div class="raw-output">${data.run.stdout || "[No Output]"}</div>`;
+                            html += `<div class="raw-output">${actual || "[Program finished with no output]"}</div>`;
                             statusSpan.innerHTML = '<span class="status-badge" style="border:1px solid gray;">Done</span>';
                         }
                     }
                 }
                 outputDiv.innerHTML = html;
             } catch(e) { 
-                outputDiv.innerText = "Connection Error"; 
+                outputDiv.innerText = "Connection Error to Compiler."; 
             } finally { 
                 btn.disabled = false; btnText.innerText = "▶ Run"; spinner.style.display = "none"; 
             }
         }
 
-        // --- FETCH & PARSE PROBLEM ---
-        async function loadProblemPreview(cid, index) {
-            const previewDiv = document.getElementById('preview-content');
-            previewDiv.innerHTML = '<div style="padding:20px; text-align:center;">Fetching...</div>';
-            state.expectedOutput = ""; // Reset expected
-            
-            const url = `https://codeforces.com/contest/${cid}/problem/${index}`;
-            const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-
-            try {
-                const res = await fetch(proxy);
-                const data = await res.json();
-                if(!data.contents) throw new Error("No Content");
-                
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(data.contents, 'text/html');
-                const statement = doc.querySelector('.problem-statement') || doc.querySelector('.ttypography');
-                
-                if(statement) {
-                    statement.querySelectorAll('img').forEach(img => {
-                        const src = img.getAttribute('src');
-                        if(src && src.startsWith('/')) img.src = 'https://codeforces.com' + src;
-                    });
-                    previewDiv.innerHTML = statement.innerHTML;
-                    if(window.MathJax) MathJax.typesetPromise([previewDiv]);
-                    
-                    // Parse I/O
-                    const inputPre = statement.querySelector('.input pre');
-                    const outputPre = statement.querySelector('.output pre');
-                    if(inputPre) document.getElementById('term-input').value = inputPre.innerText;
-                    if(outputPre) {
-                        state.expectedOutput = outputPre.innerText; // Store for diff
-                        document.getElementById('term-output').innerText = "Run code to check against sample case...";
-                        document.getElementById('term-status').innerHTML = "";
-                    }
-                } else throw new Error("Parse");
-            } catch(e) {
-                previewDiv.innerHTML = `<div style="text-align:center; padding:20px;"><button class="btn" onclick="openExternalProblem()">Open in CF</button></div>`;
-            }
-        }
-
-        // --- STANDARD UTILS (Resizers, Sidebar, Tabs) ---
+        // --- REST OF APP LOGIC ---
         function toggleLeftSidebar() {
             const sb = document.getElementById('sidebar');
             const btn = document.getElementById('show-sidebar-btn');
@@ -522,7 +538,6 @@
             document.getElementById('active-title').innerText = `${idx}. ${name}`;
             switchLeftTab('code'); switchRightTab('preview');
             
-            // Load Notes
             document.getElementById('notes-area').value = "";
             const defCode = getDefaultTemplate();
             if(state.user) {
@@ -544,7 +559,6 @@
             setTimeout(() => editor.refresh(), 10);
         }
 
-        // --- SAVE LOGIC ---
         let saveTimeout;
         function triggerSave() { clearTimeout(saveTimeout); saveTimeout = setTimeout(doSave, 1000); document.getElementById('save-indicator').innerText = "Saving..."; }
         function doSave() {
@@ -568,7 +582,6 @@
         editor.on('change', () => { if(state.currentLeftTab === 'code') triggerSave(); });
         document.getElementById('notes-area').addEventListener('input', triggerSave);
 
-        // --- UTILS ---
         function closeEditor() { state.activeProblem = null; document.getElementById('editor-overlay').style.display = 'none'; document.getElementById('empty-state').style.display = 'flex'; }
         function getDefaultTemplate() { return `// ${state.activeProblem ? state.activeProblem.name : 'Solution'}\n#include <bits/stdc++.h>\nusing namespace std;\n\nvoid solve() {\n    \n}\n\nint main() {\n    ios::sync_with_stdio(0); cin.tie(0);\n    int t; cin >> t;\n    while(t--) solve();\n}`; }
         function copyCode() { navigator.clipboard.writeText(editor.getValue()); }
@@ -589,14 +602,12 @@
 
         async function fetchSolutionCode(cid, subId) {
             try {
-                const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://codeforces.com/contest/${cid}/submission/${subId}`)}`);
-                const html = await res.text();
+                const html = await fetchWithFallback(`https://codeforces.com/contest/${cid}/submission/${subId}`);
                 const code = new DOMParser().parseFromString(html, "text/html").querySelector("#program-source-text");
                 if(code) { editor.setValue(code.innerText); }
             } catch(e) { editor.setValue("// Error fetching code."); }
         }
 
-        // --- DATA LOAD ---
         async function loadUserData(uid) {
             document.getElementById('cloud-loader').style.width = '70%';
             try {
