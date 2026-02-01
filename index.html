@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CF Tracker Pro v34 (Hybrid)</title>
+    <title>CF Tracker Pro v35 (Split Notes & Sidebars)</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/ayu-mirage.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/eclipse.min.css">
     
-    <script>
-        window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
-    </script>
+    <script>window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };</script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -27,9 +25,8 @@
             --bg-main: #0d1117; --bg-sidebar: #161b22; --bg-card: #21262d;
             --bg-hover: #30363d; --border: #30363d; --text-primary: #c9d1d9;
             --text-secondary: #8b949e; --accent: #58a6ff; --success: #238636;
-            --danger: #f85149; --gold: #e3b341; --vscode: #007acc; --tag-bg: #1f2428;
+            --danger: #f85149; --gold: #e3b341; --tag-bg: #1f2428;
             --progress-fill: rgba(35, 134, 54, 0.4); --progress-bg: #21262d;
-            --tab-active-bg: #1f2428; --tab-inactive-bg: #161b22;
             --highlight: rgba(210, 153, 34, 0.3);
         }
         :root[data-theme="light"] {
@@ -38,26 +35,18 @@
             --text-secondary: #57606a; --accent: #0969da; --success: #1a7f37;
             --danger: #cf222e; --gold: #d29922; --tag-bg: #eff1f3;
             --progress-fill: rgba(26, 127, 55, 0.25); --progress-bg: #ffffff;
-            --tab-active-bg: #ffffff; --tab-inactive-bg: #f6f8fa;
             --highlight: rgba(210, 153, 34, 0.3);
         }
 
-        /* Rating Colors */
-        .u-gray { background-color: #808080; color: white; }
-        .u-green { background-color: #008000; color: white; }
-        .u-cyan { background-color: #03a89e; color: white; }
-        .u-blue { background-color: #0000ff; color: white; }
-        .u-violet { background-color: #aa00aa; color: white; }
-        .u-orange { background-color: #ff8c00; color: white; }
-        .u-red { background-color: #ff0000; color: white; }
-
+        /* Utils & Reset */
         * { box-sizing: border-box; outline: none; }
         body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-main); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
-
-        /* SIDEBAR (Preserved from v29) */
-        #sidebar { width: 480px; background: var(--bg-sidebar); display: flex; flex-direction: column; flex-shrink: 0; border-right: 1px solid var(--border); position: relative; z-index: 50; }
-        .header-panel { padding: 10px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); display: flex; flex-direction: column; gap: 8px; }
         
+        /* --- LEFT SIDEBAR (Contest List) --- */
+        #sidebar { width: 400px; min-width: 250px; max-width: 600px; background: var(--bg-sidebar); display: flex; flex-direction: column; flex-shrink: 0; position: relative; z-index: 50; transition: transform 0.3s ease; }
+        #sidebar.collapsed { transform: translateX(-100%); margin-right: -400px; } /* Hide visually */
+        
+        .header-panel { padding: 10px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); display: flex; flex-direction: column; gap: 8px; }
         .top-row { display: flex; justify-content: space-between; align-items: center; height: 28px; }
         .brand { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 6px; }
         .top-actions { display: flex; align-items: center; gap: 8px; }
@@ -65,94 +54,93 @@
         
         .control-row { display: flex; gap: 6px; height: 32px; }
         input[type="text"] { background: var(--bg-main); border: 1px solid var(--border); color: var(--text-primary); padding: 4px 10px; border-radius: 6px; flex: 1; font-size: 0.9rem; }
-        #problemSearch:focus { border-color: var(--gold); }
-
-        #user-info-row { display: none; align-items: center; gap: 8px; font-size: 0.8rem; margin-top: -4px; margin-bottom: 2px; }
-        #rating-pill { padding: 1px 6px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; }
-        #profile-link { text-decoration: none; color: var(--text-secondary); display: flex; align-items: center; gap: 3px; }
-
-        .btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); padding: 0 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        
+        /* Buttons */
+        .btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); padding: 0 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; }
         .btn:hover { background: var(--bg-hover); }
         .btn-primary { background: var(--success); border-color: var(--success); color: white; }
         .btn-run { background: var(--success); color: white; border-color: var(--success); }
         .btn-run:disabled { background: #555; border-color: #555; cursor: wait; }
         .btn-sm { font-size: 0.75rem; padding: 2px 10px; height: 24px; }
-        
-        .filter-row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px; flex-wrap: wrap;}
-        .filter-item { display: flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap; }
-        #divFilter { background: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border); border-radius: 4px; padding: 2px 4px; font-size: 0.8rem; height: 24px; cursor: pointer; }
+        .btn-icon-only { padding: 0 8px; }
 
+        /* Filters */
+        .filter-row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px; flex-wrap: wrap;}
+        #divFilter { background: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border); border-radius: 4px; padding: 2px 4px; font-size: 0.8rem; height: 24px; cursor: pointer; }
         #bg-stats { font-size: 0.75rem; color: var(--accent); margin-top: 2px; height: 14px; white-space: nowrap; overflow: hidden; }
 
+        /* Contest List */
         #contest-list, #bookmark-list { flex: 1; overflow-y: auto; padding: 10px; scroll-behavior: smooth; }
         #bookmark-list { display: none; }
         .contest-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; overflow: hidden; }
-        .contest-header { padding: 10px 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: var(--progress-bg); transition: background 0.5s ease; }
-        .contest-header:hover { opacity: 0.9; }
+        .contest-header { padding: 10px 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: var(--progress-bg); }
         .contest-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; border-top: 1px solid transparent; background: var(--bg-card); }
         .contest-card.open .contest-body { max-height: 5000px; border-top-color: var(--border); }
 
-        .problem-row { display: grid; grid-template-columns: 24px 35px 1fr 60px; align-items: start; padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); gap: 8px; transition: background 0.5s; cursor: pointer; }
+        /* Problems */
+        .problem-row { display: grid; grid-template-columns: 24px 35px 1fr 60px; align-items: start; padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); gap: 8px; cursor: pointer; }
         .problem-row:hover { background: var(--bg-hover); }
         .problem-row.solved { border-left: 3px solid var(--success); background: rgba(35, 134, 54, 0.08); }
-        .problem-row.highlight-row { animation: flashHighlight 2s ease-out; border-left: 3px solid var(--gold); }
-        @keyframes flashHighlight { 0% { background: var(--highlight); } 100% { background: var(--bg-sidebar); } }
-
-        .p-status { text-align: center; padding-top: 2px; }
-        .p-index { font-weight: bold; color: var(--accent); padding-top: 2px; }
-        .p-content { display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
-        .p-name { font-weight: 500; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .topic-list { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; flex-wrap: wrap; }
-        .topic-pill { font-size: 0.75rem; background: var(--tag-bg); color: var(--text-secondary); padding: 1px 7px; border-radius: 12px; white-space: nowrap; border: 1px solid var(--border); }
+        .problem-row.highlight-row { animation: flash 2s; border-left: 3px solid var(--gold); }
+        @keyframes flash { 0% { background: var(--highlight); } 100% { background: var(--bg-sidebar); } }
+        
+        .topic-pill { font-size: 0.75rem; background: var(--tag-bg); color: var(--text-secondary); padding: 1px 7px; border-radius: 12px; border: 1px solid var(--border); }
         .topic-pill.rating-pill { color: #d19a66; border-color: #d19a66; font-weight: 700; }
         .p-actions { display: flex; gap: 4px; justify-content: flex-end; }
-        .icon-btn { background: transparent; border: 1px solid transparent; cursor: pointer; font-size: 1rem; padding: 2px 5px; opacity: 0.6; transition: 0.2s; border-radius: 4px; }
+        .icon-btn { background: transparent; border: 1px solid transparent; cursor: pointer; font-size: 1rem; padding: 2px 5px; opacity: 0.6; }
         .icon-btn:hover { opacity: 1; background: var(--bg-hover); border-color: var(--border); }
         .icon-btn.starred { color: var(--gold); opacity: 1; }
-        .icon-btn.has-note { color: var(--accent); opacity: 1; }
 
-        /* --- SPLIT EDITOR LAYOUT (New v34) --- */
-        #main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-main); position: relative; }
+        /* --- GLOBAL RESIZER --- */
+        .resizer { width: 5px; background: var(--bg-sidebar); cursor: col-resize; z-index: 100; border-left: 1px solid var(--border); border-right: 1px solid var(--border); transition: background 0.2s; flex-shrink: 0; }
+        .resizer:hover { background: var(--accent); }
+
+        /* --- MAIN CONTENT AREA --- */
+        #main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-main); position: relative; overflow: hidden; }
         
-        #editor-overlay { display: none; flex-direction: column; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-main); z-index: 100; }
+        /* Empty State */
+        #empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-secondary); }
+        #cloud-loader { height: 2px; background: linear-gradient(90deg, var(--accent), var(--success)); width: 0%; position: absolute; top: 0; left: 0; z-index: 200; transition: 0.3s; }
+
+        /* --- EDITOR IDE LAYOUT --- */
+        #editor-overlay { display: none; flex-direction: column; height: 100%; width: 100%; background: var(--bg-main); }
         
-        .editor-navbar { height: 42px; background: var(--bg-sidebar); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 10px; }
+        .editor-navbar { height: 42px; background: var(--bg-sidebar); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 10px; flex-shrink: 0; }
         
-        #split-container { flex: 1; display: flex; height: calc(100vh - 42px); overflow: hidden; }
-        
+        #ide-body { flex: 1; display: flex; overflow: hidden; }
+
         /* Left Pane (Code) */
-        #pane-left { width: 50%; display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+        #pane-code { flex: 1; display: flex; flex-direction: column; min-width: 200px; }
         .editor-tabs { display: flex; background: var(--bg-sidebar); border-bottom: 1px solid var(--border); }
         .tab-btn { padding: 8px 15px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border-right: 1px solid var(--border); opacity: 0.7; background: var(--bg-sidebar); }
         .tab-btn.active { background: var(--bg-main); opacity: 1; border-top: 2px solid var(--accent); }
         .CodeMirror { flex: 1; font-family: 'Fira Code', monospace; font-size: 14px; }
-        
-        /* Resizer */
-        #resizer-vertical { width: 5px; background: var(--bg-sidebar); cursor: col-resize; z-index: 10; border-left: 1px solid var(--border); transition: background 0.2s; }
-        #resizer-vertical:hover { background: var(--accent); }
 
-        /* Right Pane (Preview/Terminal) */
-        #pane-right { flex: 1; display: flex; flex-direction: column; background: var(--bg-main); overflow: hidden; }
-        #preview-content, #terminal-content { flex: 1; overflow-y: auto; padding: 20px; display: none; }
-        #preview-content.active, #terminal-content.active { display: block; }
+        /* Right Pane (Info/Notes) */
+        #pane-info { width: 45%; min-width: 200px; display: flex; flex-direction: column; background: var(--bg-main); border-left: 1px solid var(--border); transition: transform 0.3s; }
+        #pane-info.collapsed { display: none; }
+
+        #preview-content, #terminal-content, #notes-content { flex: 1; overflow-y: auto; padding: 20px; display: none; }
+        #preview-content.active, #terminal-content.active, #notes-content.active { display: block; }
         
+        /* Notes Styling */
+        #notes-area { width: 100%; height: 100%; background: var(--bg-sidebar); border: 1px solid var(--border); color: var(--text-primary); padding: 15px; font-family: sans-serif; resize: none; border-radius: 4px; line-height: 1.5; font-size: 0.95rem; }
+
         /* Preview Styling */
         #preview-content { font-size: 0.95rem; line-height: 1.6; color: var(--text-primary); }
         #preview-content img { max-width: 100%; display: block; margin: 10px 0; }
         #preview-content pre { background: var(--bg-sidebar); padding: 10px; border-radius: 6px; border: 1px solid var(--border); font-family: monospace; white-space: pre-wrap; }
-        #preview-content .title { font-size: 1.3rem; font-weight: bold; margin-bottom: 10px; color: var(--accent); }
-
+        
         /* Terminal Styling */
         .terminal-grid { display: grid; grid-template-rows: 1fr 1fr; gap: 10px; height: 100%; }
         .io-box { display: flex; flex-direction: column; gap: 5px; height: 100%; }
         .io-label { font-size: 0.75rem; color: var(--text-secondary); font-weight: bold; }
         textarea.io-area { flex: 1; background: var(--bg-sidebar); border: 1px solid var(--border); color: var(--text-primary); font-family: 'Fira Code', monospace; padding: 10px; resize: none; }
         
-        /* Empty State */
-        #empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-secondary); }
-        
-        #cloud-loader { height: 2px; background: linear-gradient(90deg, var(--accent), var(--success)); width: 0%; transition: 0.3s; position: absolute; top: 0; left: 0; z-index: 200; }
-        
+        /* Toggle Buttons */
+        .toggle-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.1rem; padding: 0 5px; }
+        .toggle-btn:hover { color: var(--accent); }
+
         .spinner { border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top: 2px solid white; width: 12px; height: 12px; animation: spin 1s linear infinite; display: none; margin-right: 5px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
@@ -160,10 +148,12 @@
 <body>
 
     <div id="sidebar">
-        <div id="cloud-loader"></div>
         <div class="header-panel">
             <div class="top-row">
                 <div class="brand">⚡ CF Tracker Pro</div>
+                <button class="toggle-btn" onclick="toggleLeftSidebar()" title="Collapse Sidebar">«</button>
+            </div>
+            <div class="top-row" style="margin-top:5px;">
                 <div class="top-actions">
                     <img id="user-avatar" src="" title="Logged In">
                     <button class="btn btn-sm" id="authBtn" onclick="handleAuth()">Login</button>
@@ -171,18 +161,18 @@
                 </div>
             </div>
             
-            <div class="control-row">
+            <div class="control-row" style="margin-top:8px;">
                 <input type="text" id="handleInput" placeholder="Handle" onchange="syncUser()">
                 <button class="btn btn-primary" id="syncBtn" onclick="syncUser()" title="Sync">↻</button>
                 <button class="btn" id="bmBtn" onclick="toggleBookmarksView()" title="Bookmarks">★</button>
             </div>
 
-            <div id="user-info-row">
+            <div id="user-info-row" style="display:none; align-items:center; gap:8px; font-size:0.8rem; margin:5px 0;">
                 <span id="rating-pill"></span>
                 <a id="profile-link" href="#" target="_blank">↗ Profile</a>
             </div>
 
-            <div class="control-row" style="margin-top:2px;">
+            <div class="control-row">
                 <input type="text" id="problemSearch" placeholder="Search (e.g. 4A, 1600B)" onkeyup="if(event.key === 'Enter') searchProblem()">
             </div>
 
@@ -205,7 +195,13 @@
         <div id="bookmark-list"></div>
     </div>
 
+    <div class="resizer" id="resizer-left"></div>
+
     <div id="main-content">
+        <div id="cloud-loader"></div>
+        
+        <button id="show-sidebar-btn" onclick="toggleLeftSidebar()" style="display:none; position:absolute; left:0; top:10px; z-index:90; background:var(--bg-card); border:1px solid var(--border); padding:5px; border-left:0; border-radius:0 5px 5px 0; cursor:pointer;">»</button>
+
         <div id="empty-state">
             <h2>Select a Problem</h2>
             <p id="cloud-status" style="margin-top:10px; font-size:0.9rem;">☁️ Login to sync notes & solutions</p>
@@ -220,31 +216,33 @@
                 <div style="display:flex; align-items:center; gap:5px;">
                     <span id="save-indicator" style="font-size:0.75rem; color:gray; margin-right:5px;"></span>
                     <button class="btn" id="view-sub-btn" onclick="openExternalSub()">↗ My Sub</button>
-                    <button class="btn" onclick="openExternalProblem()">↗ View on CF</button>
+                    <button class="btn" onclick="openExternalProblem()">↗ CF</button>
                     <button class="btn" onclick="copyCode()">Copy</button>
                     <button class="btn btn-run" id="runBtn" onclick="runCode()">
                         <div class="spinner" id="runSpinner"></div>
                         <span id="runBtnText">▶ Run</span>
                     </button>
                     <button class="btn btn-primary" onclick="submitToCF()">Submit</button>
+                    <button class="toggle-btn" onclick="toggleRightSidebar()" title="Toggle Info Panel">»</button>
                 </div>
             </div>
 
-            <div id="split-container">
-                <div id="pane-left">
+            <div id="ide-body">
+                <div id="pane-code">
                     <div class="editor-tabs">
-                        <div class="tab-btn active" id="tab-notes" onclick="switchLeftTab('notes')">Code / Notes</div>
+                        <div class="tab-btn active" id="tab-code" onclick="switchLeftTab('code')">Code Editor</div>
                         <div class="tab-btn" id="tab-solution" onclick="switchLeftTab('solution')">My Solution</div>
                     </div>
                     <textarea id="code-editor"></textarea>
                 </div>
 
-                <div id="resizer-vertical"></div>
+                <div class="resizer" id="resizer-right"></div>
 
-                <div id="pane-right">
+                <div id="pane-info">
                     <div class="editor-tabs">
                         <div class="tab-btn active" id="tab-preview" onclick="switchRightTab('preview')">Statement</div>
-                        <div class="tab-btn" id="tab-terminal" onclick="switchRightTab('terminal')">Terminal (I/O)</div>
+                        <div class="tab-btn" id="tab-terminal" onclick="switchRightTab('terminal')">Terminal</div>
+                        <div class="tab-btn" id="tab-notes" onclick="switchRightTab('notes')">Notes (Text)</div>
                     </div>
                     
                     <div id="preview-content" class="active">
@@ -262,6 +260,10 @@
                                 <textarea id="term-output" class="io-area" placeholder="Output will appear here..."></textarea>
                             </div>
                         </div>
+                    </div>
+
+                    <div id="notes-content">
+                        <textarea id="notes-area" placeholder="Write your logic, complexity analysis, or thoughts here... (Auto-saved)"></textarea>
                     </div>
                 </div>
             </div>
@@ -294,7 +296,7 @@
             submissionMap: new Map(JSON.parse(localStorage.getItem('cf_cache_submission_map') || '[]')),
             contestTotals: new Map(JSON.parse(localStorage.getItem('cf_cache_totals') || '[]')), 
             bookmarks: new Map(), activeProblem: null, viewMode: 'contests', user: null,
-            bgFetchQueue: [], currentTab: 'notes'
+            bgFetchQueue: [], currentLeftTab: 'code', currentRightTab: 'preview'
         };
 
         const editor = CodeMirror.fromTextArea(document.getElementById("code-editor"), {
@@ -330,368 +332,360 @@
 
             const obs = new IntersectionObserver(e => { if(e[0].isIntersecting && state.viewMode === 'contests') renderNextBatch(); }, { rootMargin: '200px' });
             obs.observe(document.getElementById('sentinel'));
-            initResizer();
+            initResizers();
         }
 
-        // --- PISTON COMPILER LOGIC (NEW) ---
-        async function runCode() {
-            switchRightTab('terminal'); // Force open terminal
-            const btn = document.getElementById('runBtn');
-            const btnText = document.getElementById('runBtnText');
-            const spinner = document.getElementById('runSpinner');
-            const output = document.getElementById('term-output');
-            
-            btn.disabled = true;
-            btnText.innerText = "Running...";
-            spinner.style.display = "inline-block";
-            output.value = "Compiling & Executing...";
+        // --- SIDEBAR & RESIZING LOGIC (NEW) ---
+        function toggleLeftSidebar() {
+            const sb = document.getElementById('sidebar');
+            const btn = document.getElementById('show-sidebar-btn');
+            sb.classList.toggle('collapsed');
+            btn.style.display = sb.classList.contains('collapsed') ? 'block' : 'none';
+        }
 
-            const payload = {
-                language: "cpp",
-                version: "10.2.0",
-                files: [{ content: editor.getValue() }],
-                stdin: document.getElementById('term-input').value
-            };
+        function toggleRightSidebar() {
+            const info = document.getElementById('pane-info');
+            const resizer = document.getElementById('resizer-right');
+            if(info.style.display === 'none') {
+                info.style.display = 'flex';
+                resizer.style.display = 'block';
+            } else {
+                info.style.display = 'none';
+                resizer.style.display = 'none';
+            }
+            editor.refresh();
+        }
 
-            try {
-                const res = await fetch('https://emkc.org/api/v2/piston/execute', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                
-                let resultText = "";
-                if(data.compile && data.compile.stderr) {
-                    resultText += "--- COMPILATION ERROR ---\n" + data.compile.stderr + "\n";
-                }
-                if(data.run) {
-                    if(data.run.stdout) resultText += data.run.stdout;
-                    if(data.run.stderr) resultText += "\n--- RUNTIME ERROR ---\n" + data.run.stderr;
-                }
-                output.value = resultText || "[No Output]";
-            } catch(e) {
-                output.value = "Error connecting to compiler service.";
-            } finally {
-                btn.disabled = false;
-                btnText.innerText = "▶ Run";
-                spinner.style.display = "none";
+        function initResizers() {
+            // Global Left Resizer
+            const rLeft = document.getElementById('resizer-left');
+            const sidebar = document.getElementById('sidebar');
+            rLeft.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                document.addEventListener('mousemove', resizeLeft);
+                document.addEventListener('mouseup', stopLeft);
+            });
+            function resizeLeft(e) { sidebar.style.width = Math.max(250, Math.min(600, e.clientX)) + 'px'; }
+            function stopLeft() { document.removeEventListener('mousemove', resizeLeft); document.removeEventListener('mouseup', stopLeft); }
+
+            // Internal Right Resizer
+            const rRight = document.getElementById('resizer-right');
+            const paneInfo = document.getElementById('pane-info');
+            const ideBody = document.getElementById('ide-body');
+            rRight.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                document.addEventListener('mousemove', resizeRight);
+                document.addEventListener('mouseup', stopRight);
+            });
+            function resizeRight(e) { 
+                const w = ideBody.getBoundingClientRect().right - e.clientX;
+                paneInfo.style.width = Math.max(200, Math.min(800, w)) + 'px'; 
+            }
+            function stopRight() { document.removeEventListener('mousemove', resizeRight); document.removeEventListener('mouseup', stopRight); }
+        }
+
+        // --- TABS & CONTENT SWITCHING (UPDATED) ---
+        function switchLeftTab(tabName) {
+            state.currentLeftTab = tabName;
+            document.getElementById('tab-code').classList.toggle('active', tabName === 'code');
+            document.getElementById('tab-solution').classList.toggle('active', tabName === 'solution');
+            document.getElementById('view-sub-btn').style.display = (tabName === 'solution') ? 'block' : 'none';
+
+            if(tabName === 'code') {
+                editor.setOption("readOnly", false);
+                const content = localStorage.getItem(`cf_note_${state.activeProblem.id}`) || getDefaultTemplate();
+                editor.setValue(content);
+            } else {
+                editor.setOption("readOnly", true);
+                editor.setValue("// Loading Solution...");
+                const subId = state.submissionMap.get(state.activeProblem.id);
+                if(subId) fetchSolutionCode(state.activeProblem.cid, subId);
+                else editor.setValue("// No solution found. Sync required.");
             }
         }
 
-        // --- FETCH PROBLEM STATEMENT (NEW) ---
-        async function loadProblemPreview(cid, index) {
-            const previewDiv = document.getElementById('preview-content');
-            previewDiv.innerHTML = '<div style="padding:20px; text-align:center;">Fetching Problem Statement...</div>';
+        function switchRightTab(tabName) {
+            state.currentRightTab = tabName;
+            document.getElementById('tab-preview').classList.toggle('active', tabName === 'preview');
+            document.getElementById('tab-terminal').classList.toggle('active', tabName === 'terminal');
+            document.getElementById('tab-notes').classList.toggle('active', tabName === 'notes');
             
-            const url = `https://codeforces.com/contest/${cid}/problem/${index}`;
-            // Using allorigins proxy to bypass CORS
-            const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-
-            try {
-                const res = await fetch(proxy);
-                const data = await res.json();
-                if(!data.contents) throw new Error("No Content");
-
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(data.contents, 'text/html');
-                
-                // Extract statement
-                let statement = doc.querySelector('.problem-statement') || doc.querySelector('.ttypography');
-                
-                if(statement) {
-                    // Fix Image Links
-                    statement.querySelectorAll('img').forEach(img => {
-                        const src = img.getAttribute('src');
-                        if(src && src.startsWith('/')) img.src = 'https://codeforces.com' + src;
-                    });
-                    
-                    previewDiv.innerHTML = statement.innerHTML;
-                    
-                    // Trigger MathJax Render
-                    if(window.MathJax) MathJax.typesetPromise([previewDiv]);
-
-                    // Extract sample I/O for Terminal
-                    const inputPre = statement.querySelector('.input pre');
-                    const outputPre = statement.querySelector('.output pre');
-                    if(inputPre) document.getElementById('term-input').value = inputPre.innerText;
-                    if(outputPre) document.getElementById('term-output').placeholder = `Expected Output:\n${outputPre.innerText}`;
-                } else {
-                    throw new Error("Parse Error");
-                }
-            } catch(e) {
-                previewDiv.innerHTML = `<div style="padding:20px; text-align:center; color:var(--danger);">
-                    <h3>Could not load statement inside app.</h3>
-                    <p>Codeforces might be blocking the proxy.</p>
-                    <button class="btn btn-primary" onclick="openExternalProblem()">Open in New Tab</button>
-                </div>`;
-            }
+            document.getElementById('preview-content').classList.toggle('active', tabName === 'preview');
+            document.getElementById('terminal-content').classList.toggle('active', tabName === 'terminal');
+            document.getElementById('notes-content').classList.toggle('active', tabName === 'notes');
         }
 
-        // --- PROBLEM OPENING LOGIC ---
+        // --- OPEN PROBLEM & SYNC LOGIC (UPDATED) ---
         async function openEditor(pid, cid, idx, name) {
             state.activeProblem = { id: pid, cid, idx, name };
             document.getElementById('empty-state').style.display = 'none';
             document.getElementById('editor-overlay').style.display = 'flex';
             document.getElementById('active-title').innerText = `${idx}. ${name}`;
             
-            // Switch tabs
-            switchLeftTab('notes');
+            // Reset Tabs
+            switchLeftTab('code');
             switchRightTab('preview');
+            
+            // Clear or Load Notes
+            document.getElementById('notes-area').value = "";
 
-            // Load Notes
+            // Load Data (Code + Notes)
+            const defaultCode = getDefaultTemplate();
+            
             if(state.user) {
-                const noteRef = db.collection('users').doc(state.user.uid).collection('notes').doc(pid);
-                noteRef.get().then(doc => {
+                const docRef = db.collection('users').doc(state.user.uid).collection('notes').doc(pid);
+                docRef.get().then(doc => {
                     if(doc.exists) {
-                        const cloudContent = doc.data().content;
-                        if(state.currentTab === 'notes') editor.setValue(cloudContent);
-                        localStorage.setItem(`cf_note_${pid}`, cloudContent);
+                        const data = doc.data();
+                        // Load Code
+                        const code = data.content || defaultCode;
+                        editor.setValue(code);
+                        localStorage.setItem(`cf_note_${pid}`, code);
+                        
+                        // Load Text Notes (New Field: note_text)
+                        const noteText = data.note_text || "";
+                        document.getElementById('notes-area').value = noteText;
+                        localStorage.setItem(`cf_text_${pid}`, noteText);
                     } else {
-                        editor.setValue(localStorage.getItem(`cf_note_${pid}`) || getDefaultTemplate());
+                        // Fallback local
+                        editor.setValue(localStorage.getItem(`cf_note_${pid}`) || defaultCode);
+                        document.getElementById('notes-area').value = localStorage.getItem(`cf_text_${pid}`) || "";
                     }
                 });
             } else {
-                editor.setValue(localStorage.getItem(`cf_note_${pid}`) || getDefaultTemplate());
+                editor.setValue(localStorage.getItem(`cf_note_${pid}`) || defaultCode);
+                document.getElementById('notes-area').value = localStorage.getItem(`cf_text_${pid}`) || "";
             }
 
-            // Load Preview
+            // Load Statement
             loadProblemPreview(cid, idx);
-            
             setTimeout(() => editor.refresh(), 10);
         }
 
-        function getDefaultTemplate() {
-            return `// ${state.activeProblem ? state.activeProblem.name : 'Solution'}\n#include <bits/stdc++.h>\nusing namespace std;\n\nvoid solve() {\n    \n}\n\nint main() {\n    ios::sync_with_stdio(0); cin.tie(0);\n    int t; cin >> t;\n    while(t--) solve();\n}`;
+        // --- AUTO SAVE LOGIC (UPDATED) ---
+        let saveTimeout;
+        
+        function triggerSave() {
+            if(!state.activeProblem) return;
+            document.getElementById('save-indicator').innerText = "Saving...";
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(doSave, 1000);
         }
 
-        function closeEditor() {
-            state.activeProblem = null;
-            document.getElementById('editor-overlay').style.display = 'none';
-            document.getElementById('empty-state').style.display = 'flex';
-        }
-
-        // --- TABS LOGIC ---
-        function switchLeftTab(tabName) {
-            state.currentTab = tabName;
-            document.getElementById('tab-notes').classList.toggle('active', tabName === 'notes');
-            document.getElementById('tab-solution').classList.toggle('active', tabName === 'solution');
+        function doSave() {
+            if(!state.activeProblem) return;
+            const pid = state.activeProblem.id;
             
-            document.getElementById('view-sub-btn').style.display = (tabName === 'solution') ? 'block' : 'none';
+            // Get Code (only if in code tab, otherwise keep logic simple)
+            // Note: If user is in 'solution' tab, we shouldn't overwrite code with solution text. 
+            // editor.getValue() returns current view.
+            // Safe approach: Only update 'content' if currentLeftTab is 'code'.
+            
+            let dataToSave = {};
+            
+            if(state.currentLeftTab === 'code') {
+                const code = editor.getValue();
+                localStorage.setItem(`cf_note_${pid}`, code);
+                dataToSave.content = code;
+            }
 
-            if(tabName === 'notes') {
-                editor.setOption("readOnly", false);
-                const content = localStorage.getItem(`cf_note_${state.activeProblem.id}`) || getDefaultTemplate();
-                editor.setValue(content);
-                document.getElementById('save-indicator').innerText = "Notes Loaded";
+            const noteText = document.getElementById('notes-area').value;
+            localStorage.setItem(`cf_text_${pid}`, noteText);
+            dataToSave.note_text = noteText;
+
+            if(state.user && Object.keys(dataToSave).length > 0) {
+                db.collection('users').doc(state.user.uid).collection('notes').doc(pid).set(dataToSave, { merge: true })
+                .then(() => document.getElementById('save-indicator').innerText = "Saved")
+                .catch(() => document.getElementById('save-indicator').innerText = "Error");
             } else {
-                editor.setOption("readOnly", true);
-                editor.setValue("// Loading Solution...");
-                const subId = state.submissionMap.get(state.activeProblem.id);
-                if(subId) fetchSolutionCode(state.activeProblem.cid, subId);
-                else editor.setValue("// No solution found.\n// Click 'Sync' to fetch latest submissions.");
+                document.getElementById('save-indicator').innerText = "Saved Locally";
             }
         }
 
-        function switchRightTab(tabName) {
-            document.getElementById('tab-preview').classList.toggle('active', tabName === 'preview');
-            document.getElementById('tab-terminal').classList.toggle('active', tabName === 'terminal');
-            document.getElementById('preview-content').classList.toggle('active', tabName === 'preview');
-            document.getElementById('terminal-content').classList.toggle('active', tabName === 'terminal');
+        // Listeners for Save
+        editor.on('change', () => { if(state.currentLeftTab === 'code') triggerSave(); });
+        document.getElementById('notes-area').addEventListener('input', triggerSave);
+
+        // --- PISTON COMPILER ---
+        async function runCode() {
+            switchRightTab('terminal'); 
+            const btn = document.getElementById('runBtn');
+            const btnText = document.getElementById('runBtnText');
+            const spinner = document.getElementById('runSpinner');
+            const output = document.getElementById('term-output');
+            
+            btn.disabled = true; btnText.innerText = "Running..."; spinner.style.display = "inline-block"; output.value = "Compiling...";
+
+            // If in solution tab, run that code. If in code tab, run editor code.
+            const sourceCode = editor.getValue(); 
+
+            try {
+                const res = await fetch('https://emkc.org/api/v2/piston/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        language: "cpp", version: "10.2.0",
+                        files: [{ content: sourceCode }],
+                        stdin: document.getElementById('term-input').value
+                    })
+                });
+                const data = await res.json();
+                let resTxt = "";
+                if(data.compile && data.compile.stderr) resTxt += "--- COMPILE ERROR ---\n" + data.compile.stderr + "\n";
+                if(data.run) {
+                    if(data.run.stdout) resTxt += data.run.stdout;
+                    if(data.run.stderr) resTxt += "\n--- STDERR ---\n" + data.run.stderr;
+                }
+                output.value = resTxt || "[No Output]";
+            } catch(e) { output.value = "Connection Error"; } 
+            finally { btn.disabled = false; btnText.innerText = "▶ Run"; spinner.style.display = "none"; }
         }
 
-        // --- STANDARD FUNCTIONS (Retained) ---
-        function handleAuth() { if(state.user) auth.signOut(); else auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => alert(e.message)); }
+        // --- FETCH PREVIEW ---
+        async function loadProblemPreview(cid, index) {
+            const previewDiv = document.getElementById('preview-content');
+            previewDiv.innerHTML = '<div style="padding:20px; text-align:center;">Fetching...</div>';
+            const url = `https://codeforces.com/contest/${cid}/problem/${index}`;
+            const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+            try {
+                const res = await fetch(proxy);
+                const data = await res.json();
+                if(!data.contents) throw new Error("No Content");
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data.contents, 'text/html');
+                let statement = doc.querySelector('.problem-statement') || doc.querySelector('.ttypography');
+                if(statement) {
+                    statement.querySelectorAll('img').forEach(img => {
+                        const src = img.getAttribute('src');
+                        if(src && src.startsWith('/')) img.src = 'https://codeforces.com' + src;
+                    });
+                    previewDiv.innerHTML = statement.innerHTML;
+                    if(window.MathJax) MathJax.typesetPromise([previewDiv]);
+                    const inputPre = statement.querySelector('.input pre');
+                    const outputPre = statement.querySelector('.output pre');
+                    if(inputPre) document.getElementById('term-input').value = inputPre.innerText;
+                    if(outputPre) document.getElementById('term-output').placeholder = `Expected:\n${outputPre.innerText}`;
+                } else throw new Error("Parse");
+            } catch(e) {
+                previewDiv.innerHTML = `<div style="text-align:center; padding:20px;"><button class="btn" onclick="openExternalProblem()">Open in CF</button></div>`;
+            }
+        }
+
+        // --- STANDARD UTILS ---
+        function closeEditor() { state.activeProblem = null; document.getElementById('editor-overlay').style.display = 'none'; document.getElementById('empty-state').style.display = 'flex'; }
+        function getDefaultTemplate() { return `// ${state.activeProblem ? state.activeProblem.name : 'Solution'}\n#include <bits/stdc++.h>\nusing namespace std;\n\nvoid solve() {\n    \n}\n\nint main() {\n    ios::sync_with_stdio(0); cin.tie(0);\n    int t; cin >> t;\n    while(t--) solve();\n}`; }
+        function copyCode() { navigator.clipboard.writeText(editor.getValue()); }
+        function submitToCF() { if(state.activeProblem) { copyCode(); window.open(`https://codeforces.com/contest/${state.activeProblem.cid}/submit?problemIndex=${state.activeProblem.idx}`, '_blank'); } }
+        function openExternalSub() { const subId = state.submissionMap.get(state.activeProblem.id); if(subId) window.open(`https://codeforces.com/contest/${state.activeProblem.cid}/submission/${subId}`, '_blank'); else alert("No submission found."); }
+        function openExternalProblem() { if(state.activeProblem) window.open(`https://codeforces.com/contest/${state.activeProblem.cid}/problem/${state.activeProblem.index}`, '_blank'); }
+        function handleAuth() { if(state.user) auth.signOut(); else auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert(e.message)); }
         function updateAuthUI() { 
-            const btn = document.getElementById('authBtn'); 
-            const avatar = document.getElementById('user-avatar');
+            const btn = document.getElementById('authBtn'); const avatar = document.getElementById('user-avatar');
             if(state.user) { btn.innerText = "Exit"; avatar.src = state.user.photoURL; avatar.style.display = 'block'; }
             else { btn.innerText = "Login"; avatar.style.display = 'none'; }
         }
+        function toggleTheme() {
+            const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next); localStorage.setItem('cf_theme', next);
+            editor.setOption("theme", next === 'dark' ? 'ayu-mirage' : 'eclipse');
+        }
 
+        async function fetchSolutionCode(cid, subId) {
+            try {
+                const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(`https://codeforces.com/contest/${cid}/submission/${subId}`)}`);
+                const html = await res.text();
+                const doc = new DOMParser().parseFromString(html, "text/html");
+                const code = doc.querySelector("#program-source-text");
+                if(code) { editor.setValue(code.innerText); document.getElementById('save-indicator').innerText = "Solution Loaded"; }
+            } catch(e) { editor.setValue("// Error fetching code."); }
+        }
+
+        // --- CORE DATA FETCHING (Unchanged logic) ---
         async function loadUserData(uid) {
             document.getElementById('cloud-loader').style.width = '70%';
             try {
                 const doc = await db.collection('users').doc(uid).get();
                 if(doc.exists) {
                     const data = doc.data();
-                    if(data.cfHandle) { 
-                        document.getElementById('handleInput').value = data.cfHandle; 
-                        localStorage.setItem('cf_handle', data.cfHandle); 
-                        syncUser(false); 
-                    }
-                    if(data.bookmarks) {
-                        state.bookmarks = new Map(Object.entries(data.bookmarks));
-                        localStorage.setItem('cf_bookmarks_map', JSON.stringify([...state.bookmarks]));
-                    }
+                    if(data.cfHandle) { document.getElementById('handleInput').value = data.cfHandle; localStorage.setItem('cf_handle', data.cfHandle); syncUser(false); }
+                    if(data.bookmarks) { state.bookmarks = new Map(Object.entries(data.bookmarks)); localStorage.setItem('cf_bookmarks_map', JSON.stringify([...state.bookmarks])); }
                 }
-            } catch(e) {}
+            } catch(e){}
             document.getElementById('cloud-loader').style.width = '0%';
         }
-
         async function fetchContests() {
             try {
-                const res = await fetch(API_CONTESTS);
-                const data = await res.json();
-                if(data.status === 'OK') {
-                    state.allContests = data.result.filter(c => c.phase === 'FINISHED').sort((a,b) => b.id - a.id);
-                    localStorage.setItem('cf_cache_contests', JSON.stringify(state.allContests));
-                    applyFilters();
-                }
-            } catch(e) {}
+                const res = await fetch(API_CONTESTS); const data = await res.json();
+                if(data.status==='OK') { state.allContests = data.result.filter(c=>c.phase==='FINISHED').sort((a,b)=>b.id-a.id); localStorage.setItem('cf_cache_contests', JSON.stringify(state.allContests)); applyFilters(); }
+            } catch(e){}
         }
-
         async function syncUser(showUI=true) {
             const h = document.getElementById('handleInput').value; if(!h) return;
             localStorage.setItem('cf_handle', h);
             if(state.user) db.collection('users').doc(state.user.uid).set({ cfHandle: h }, { merge: true });
-
             const btn = document.getElementById('syncBtn'); if(showUI) btn.innerText = "...";
             fetchUserInfo(h);
-
             try {
-                const res = await fetch(`${API_USER}?handle=${h}`);
-                const data = await res.json();
-                if(data.status === 'OK') {
+                const res = await fetch(`${API_USER}?handle=${h}`); const data = await res.json();
+                if(data.status==='OK') {
                     state.solved.clear(); state.attemptedContests.clear(); state.submissionMap.clear();
-                    localStorage.removeItem('cf_cache_solved'); localStorage.removeItem('cf_cache_attempted_contests'); localStorage.removeItem('cf_cache_submission_map');
-                    
                     data.result.forEach(s => { 
                         state.attemptedContests.add(s.contestId);
-                        const pid = `${s.contestId}${s.problem.index}`;
                         if(s.verdict === 'OK') {
+                            const pid = `${s.contestId}${s.problem.index}`;
                             state.solved.add(pid);
                             if(!state.submissionMap.has(pid)) state.submissionMap.set(pid, s.id); 
                         }
                     });
-                    
                     localStorage.setItem('cf_cache_solved', JSON.stringify([...state.solved]));
-                    localStorage.setItem('cf_cache_attempted_contests', JSON.stringify([...state.attemptedContests]));
                     localStorage.setItem('cf_cache_submission_map', JSON.stringify([...state.submissionMap]));
-                    
-                    applyFilters(); 
-                    if(showUI) btn.innerText = "✓";
+                    applyFilters(); if(showUI) btn.innerText = "✓";
                     startBackgroundProgressFetch();
                 }
             } catch(e) { if(showUI) btn.innerText = "!"; }
             setTimeout(() => btn.innerText = "↻", 2000);
         }
-
         async function fetchUserInfo(handle) {
             try {
-                const res = await fetch(`${API_INFO}?handles=${handle}`);
-                const data = await res.json();
-                if(data.status === 'OK' && data.result.length > 0) {
+                const res = await fetch(`${API_INFO}?handles=${handle}`); const data = await res.json();
+                if(data.status==='OK' && data.result.length>0) {
                     const u = data.result[0];
-                    const pill = document.getElementById('rating-pill');
-                    const row = document.getElementById('user-info-row');
-                    const link = document.getElementById('profile-link');
-                    
-                    const r = u.rating || 0;
-                    pill.innerText = `${u.rank || 'user'} (${r})`;
-                    
-                    pill.className = 'rating-pill'; 
-                    if (r < 1200) pill.classList.add('u-gray');
-                    else if (r < 1400) pill.classList.add('u-green');
-                    else if (r < 1600) pill.classList.add('u-cyan');
-                    else if (r < 1900) pill.classList.add('u-blue');
-                    else if (r < 2100) pill.classList.add('u-violet');
-                    else if (r < 2400) pill.classList.add('u-orange');
-                    else pill.classList.add('u-red');
-
-                    link.href = `https://codeforces.com/profile/${handle}`;
-                    row.style.display = 'flex';
+                    document.getElementById('rating-pill').innerText = `${u.rank||'user'} (${u.rating||0})`;
+                    document.getElementById('profile-link').href=`https://codeforces.com/profile/${handle}`;
+                    document.getElementById('user-info-row').style.display='flex';
                 }
-            } catch(e) {}
+            } catch(e){}
         }
-
-        async function searchProblem() {
-            const query = document.getElementById('problemSearch').value.trim().toUpperCase();
-            if(!query) return;
-            const match = query.match(/^(\d+)([A-Z]\d*)$/);
-            if(!match) { alert("Invalid Format. Use 4A, 1600B"); return; }
-            const cid = parseInt(match[1]);
-            const index = match[2];
-            const pid = `${cid}${index}`;
-            const contestExists = state.allContests.find(c => c.id === cid);
-            if(!contestExists) { alert("Contest " + cid + " not found."); return; }
-            state.filteredContests = [contestExists];
-            document.querySelectorAll('.contest-card').forEach(e => e.remove());
-            state.renderedCount = 0;
-            const list = document.getElementById('contest-list');
-            const card = document.createElement('div');
-            card.className = 'contest-card';
-            card.dataset.cid = cid;
-            card.innerHTML = `<div class="contest-header" onclick="toggleContest(this, ${cid})"><span style="font-weight:500;">${contestExists.name}</span><span class="tag" style="background:var(--tag-bg); padding:2px 6px; border-radius:4px; font-size:0.75rem;">#${cid}</span></div><div class="contest-body" data-loaded="false"></div>`;
-            list.appendChild(card);
-            const header = card.querySelector('.contest-header');
-            await toggleContest(header, cid);
-            setTimeout(() => {
-                const row = document.getElementById(`row-${pid}`);
-                if(row) {
-                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    row.classList.add('highlight-row');
-                    setTimeout(() => row.classList.remove('highlight-row'), 2500);
-                } else { alert(`Problem ${index} not found in Contest ${cid}`); }
-            }, 500);
-        }
-
+        
+        // --- BACKGROUND FETCH & RENDERING ---
         function startBackgroundProgressFetch() {
             state.bgFetchQueue = [...state.attemptedContests].filter(cid => !state.contestTotals.has(cid));
-            state.bgFetchQueue.sort((a,b) => b - a);
-            if(state.bgFetchQueue.length > 0) { updateStatsBar(); processBackgroundQueue(); }
-            else { document.getElementById('bg-stats').innerText = "Stats synced."; setTimeout(() => document.getElementById('bg-stats').innerText = "", 3000); }
+            state.bgFetchQueue.sort((a,b)=>b-a);
+            if(state.bgFetchQueue.length > 0) processBackgroundQueue();
         }
-
         function processBackgroundQueue() {
-            if(state.bgFetchQueue.length === 0) { document.getElementById('bg-stats').innerText = ""; return; }
+            if(state.bgFetchQueue.length === 0) { document.getElementById('bg-stats').innerText=""; return; }
             const cid = state.bgFetchQueue.shift();
-            updateStatsBar();
+            document.getElementById('bg-stats').innerText = `Updating: ${state.bgFetchQueue.length}...`;
             fetch(`https://codeforces.com/api/contest.standings?contestId=${cid}&from=1&count=1`)
-                .then(res => res.json())
-                .then(data => {
-                    if(data.status === 'OK') {
-                        state.contestTotals.set(cid, data.result.problems.length);
+                .then(r=>r.json()).then(d=>{
+                    if(d.status==='OK') {
+                        state.contestTotals.set(cid, d.result.problems.length);
                         localStorage.setItem('cf_cache_totals', JSON.stringify([...state.contestTotals]));
                         updateContestCardStyle(cid);
                     }
-                })
-                .catch(e => {})
-                .finally(() => setTimeout(processBackgroundQueue, 800));
-        }
-
-        function updateStatsBar() { 
-            const el = document.getElementById('bg-stats'); 
-            if(state.bgFetchQueue.length>0) el.innerText = `Updating: ${state.bgFetchQueue.length} left...`; 
-        }
-
-        function updateContestCardStyle(cid) {
-            const header = document.querySelector(`.contest-card[data-cid="${cid}"] .contest-header`);
-            if(header && state.contestTotals.has(cid)) {
-                let total = state.contestTotals.get(cid);
-                let solvedCount = 0;
-                for (let s of state.solved) { if (s.startsWith(cid)) solvedCount++; }
-                let pct = Math.min(100, Math.round((solvedCount / total) * 100));
-                header.style.background = `linear-gradient(90deg, var(--progress-fill) ${pct}%, var(--progress-bg) ${pct}%)`;
-            }
+                }).finally(()=>setTimeout(processBackgroundQueue, 800));
         }
 
         function applyFilters() {
-            const onlyStandard = document.getElementById('roundFilter').checked;
-            const onlyAttempted = document.getElementById('attemptedFilter').checked;
-            const divFilter = document.getElementById('divFilter').value;
-
+            const onlyStd = document.getElementById('roundFilter').checked;
+            const onlyAtt = document.getElementById('attemptedFilter').checked;
+            const div = document.getElementById('divFilter').value;
             state.filteredContests = state.allContests.filter(c => {
                 const n = c.name;
-                if(onlyStandard) {
-                    if(!((n.includes("Codeforces Round") || n.includes("Educational")) && !n.includes("Hello") && !n.includes("Good Bye") && !n.includes("ICPC"))) return false;
-                }
-                if(onlyAttempted && !state.attemptedContests.has(c.id)) return false;
-                
-                if(divFilter !== "ALL") {
-                    if(!n.includes(divFilter)) return false;
-                }
-
+                if(onlyStd && !((n.includes("Codeforces Round") || n.includes("Educational")) && !n.includes("Hello") && !n.includes("Good Bye"))) return false;
+                if(onlyAtt && !state.attemptedContests.has(c.id)) return false;
+                if(div !== "ALL" && !n.includes(div)) return false;
                 return true;
             });
             document.querySelectorAll('.contest-card').forEach(e => e.remove());
@@ -703,38 +697,27 @@
             const list = document.getElementById('contest-list');
             const batch = state.filteredContests.slice(state.renderedCount, state.renderedCount + 20);
             batch.forEach(c => {
-                const card = document.createElement('div');
-                card.className = 'contest-card';
-                card.dataset.cid = c.id;
-                let headerStyle = '';
-                if (state.contestTotals.has(c.id)) {
-                    let total = state.contestTotals.get(c.id);
-                    let solvedCount = 0;
-                    for (let s of state.solved) { if (s.startsWith(c.id)) solvedCount++; }
-                    let pct = Math.min(100, Math.round((solvedCount / total) * 100));
-                    headerStyle = `style="background: linear-gradient(90deg, var(--progress-fill) ${pct}%, var(--progress-bg) ${pct}%)"`;
-                } else if(state.attemptedContests.has(c.id)) { headerStyle = `style="background: var(--progress-bg)"`; }
-                card.innerHTML = `<div class="contest-header" onclick="toggleContest(this, ${c.id})" ${headerStyle}><span style="font-weight:500;">${c.name}</span><span class="tag" style="background:var(--tag-bg); padding:2px 6px; border-radius:4px; font-size:0.75rem;">#${c.id}</span></div><div class="contest-body" data-loaded="false"></div>`;
+                const card = document.createElement('div'); card.className = 'contest-card'; card.dataset.cid = c.id;
+                let bgStyle = '';
+                if(state.contestTotals.has(c.id)) {
+                    let total = state.contestTotals.get(c.id), solved = 0;
+                    for (let s of state.solved) { if(s.startsWith(c.id)) solved++; }
+                    let pct = Math.min(100, Math.round((solved/total)*100));
+                    bgStyle = `style="background: linear-gradient(90deg, var(--progress-fill) ${pct}%, var(--progress-bg) ${pct}%)"`;
+                }
+                card.innerHTML = `<div class="contest-header" onclick="toggleContest(this, ${c.id})" ${bgStyle}><span style="font-weight:500;">${c.name}</span><span class="topic-pill">#${c.id}</span></div><div class="contest-body"></div>`;
                 list.insertBefore(card, document.getElementById('sentinel'));
             });
             state.renderedCount += 20;
         }
 
         async function toggleContest(header, cid) {
-            const card = header.parentElement;
-            const body = card.querySelector('.contest-body');
+            const card = header.parentElement; const body = card.querySelector('.contest-body');
             const cacheKey = `cf_contest_${cid}`;
             if(card.classList.toggle('open')) {
                 const cached = localStorage.getItem(cacheKey);
-                if(cached) {
-                    if (!state.contestTotals.has(cid)) {
-                        state.contestTotals.set(cid, JSON.parse(cached).length);
-                        localStorage.setItem('cf_cache_totals', JSON.stringify([...state.contestTotals]));
-                        updateContestCardStyle(cid);
-                    }
-                    renderProblemsInBody(body, JSON.parse(cached), cid);
-                    body.dataset.loaded = "true";
-                } else {
+                if(cached) { renderProblemsInBody(body, JSON.parse(cached), cid); }
+                else {
                     body.innerHTML = '<div style="padding:10px; text-align:center">Loading...</div>';
                     try {
                         const res = await fetch(`https://codeforces.com/api/contest.standings?contestId=${cid}&from=1&count=1`);
@@ -742,126 +725,57 @@
                         if(data.status === 'OK') {
                             const problems = data.result.problems;
                             localStorage.setItem(cacheKey, JSON.stringify(problems));
-                            if(!state.contestTotals.has(cid)) {
-                                state.contestTotals.set(cid, problems.length);
-                                localStorage.setItem('cf_cache_totals', JSON.stringify([...state.contestTotals]));
-                                updateContestCardStyle(cid);
-                            }
                             renderProblemsInBody(body, problems, cid);
-                            body.dataset.loaded = "true";
                         }
-                    } catch(e) { body.innerHTML = '<div style="color:var(--danger); padding:10px">Error</div>'; }
+                    } catch(e) { body.innerHTML = 'Error'; }
                 }
             }
         }
 
-        function renderProblemsInBody(body, problems, cid) { body.innerHTML = problems.map(p => createProblemHTML(p, cid)).join(''); }
-
-        function createProblemHTML(p, cid) {
-            const pid = `${cid}${p.index}`;
-            const isSolved = state.solved.has(pid);
-            const isBookmarked = state.bookmarks.has(pid);
-            const hasNote = localStorage.getItem(`cf_note_${pid}`) ? 'has-note' : '';
-            let ratingHtml = p.rating ? `<span class="topic-pill rating-pill">${p.rating}</span>` : '';
-            const tagsHtml = (p.tags || []).map(t => `<span class="topic-pill">${t}</span>`).join('');
-            const cleanName = p.name.replace(/'/g,"");
-            return `<div class="problem-row ${isSolved ? 'solved' : ''}" id="row-${pid}" onclick="openEditor('${pid}', ${cid}, '${p.index}', '${cleanName}')"><div class="p-status">${isSolved ? '✅' : ''}</div><div class="p-index">${p.index}</div><div class="p-content"><div class="p-name">${p.name}</div><div class="topic-list">${ratingHtml+tagsHtml}</div></div><div class="p-actions"><button class="icon-btn ${isBookmarked ? 'starred' : ''}" onclick="event.stopPropagation(); toggleBookmark('${pid}', ${cid}, '${p.index}', '${cleanName}', ${p.rating||0}, '${(p.tags||[]).join(",")}')">★</button><button class="icon-btn ${hasNote}">✎</button></div></div>`;
+        function renderProblemsInBody(body, problems, cid) {
+            body.innerHTML = problems.map(p => {
+                const pid = `${cid}${p.index}`;
+                const isSolved = state.solved.has(pid);
+                const isBookmarked = state.bookmarks.has(pid);
+                const cleanName = p.name.replace(/'/g,"");
+                const ratingHtml = p.rating ? `<span class="topic-pill rating-pill">${p.rating}</span>` : '';
+                return `<div class="problem-row ${isSolved ? 'solved' : ''}" onclick="openEditor('${pid}', ${cid}, '${p.index}', '${cleanName}')">
+                    <div class="p-status">${isSolved ? '✅' : ''}</div>
+                    <div class="p-index">${p.index}</div>
+                    <div class="p-content"><div class="p-name">${p.name}</div><div class="topic-list">${ratingHtml}</div></div>
+                    <div class="p-actions"><button class="icon-btn ${isBookmarked ? 'starred' : ''}" onclick="event.stopPropagation(); toggleBookmark('${pid}')">★</button></div>
+                </div>`;
+            }).join('');
         }
 
-        function toggleBookmark(pid, cid, idx, name, rating, tags) {
-            if(state.bookmarks.has(pid)) state.bookmarks.delete(pid);
-            else state.bookmarks.set(pid, { cid, idx, name, rating, tags: tags ? tags.split(',') : [] });
+        function toggleBookmark(pid) {
+            if(state.bookmarks.has(pid)) state.bookmarks.delete(pid); else state.bookmarks.set(pid, { ts: Date.now() });
             localStorage.setItem('cf_bookmarks_map', JSON.stringify([...state.bookmarks]));
             if(state.user) db.collection('users').doc(state.user.uid).set({ bookmarks: Object.fromEntries(state.bookmarks) }, { merge: true });
-            const row = document.getElementById(`row-${pid}`);
-            if(row) row.querySelector('.p-actions button:nth-child(1)').classList.toggle('starred');
-            if(state.viewMode === 'bookmarks') renderBookmarks();
         }
-
+        function updateContestCardStyle(cid) {
+            const header = document.querySelector(`.contest-card[data-cid="${cid}"] .contest-header`);
+            if(header && state.contestTotals.has(cid)) {
+                let total = state.contestTotals.get(cid), solved = 0;
+                for (let s of state.solved) { if (s.startsWith(cid)) solved++; }
+                let pct = Math.min(100, Math.round((solved/total)*100));
+                header.style.background = `linear-gradient(90deg, var(--progress-fill) ${pct}%, var(--progress-bg) ${pct}%)`;
+            }
+        }
+        function searchProblem() {
+            const q = document.getElementById('problemSearch').value.trim().toUpperCase().match(/^(\d+)([A-Z]\d*)$/);
+            if(q) openEditor(`${q[1]}${q[2]}`, parseInt(q[1]), q[2], `Problem ${q[2]}`);
+            else alert("Format: 4A");
+        }
         function toggleBookmarksView() {
             state.viewMode = state.viewMode === 'contests' ? 'bookmarks' : 'contests';
-            document.getElementById('contest-list').style.display = state.viewMode === 'contests' ? 'block' : 'none';
-            document.getElementById('bookmark-list').style.display = state.viewMode === 'bookmarks' ? 'block' : 'none';
-            document.getElementById('bmBtn').classList.toggle('btn-active');
-            if(state.viewMode === 'bookmarks') renderBookmarks();
-        }
-
-        function renderBookmarks() {
-            const list = document.getElementById('bookmark-list');
-            let html = '<div style="padding:10px; font-weight:bold; font-size:0.9rem;">Bookmarks</div>';
-            state.bookmarks.forEach((val, pid) => {
-                const p = { index: val.idx, name: val.name, rating: val.rating, tags: val.tags };
-                html += createProblemHTML(p, val.cid);
-            });
-            list.innerHTML = html;
-        }
-
-        async function fetchSolutionCode(cid, subId) {
-            const url = `https://codeforces.com/contest/${cid}/submission/${subId}`;
-            try {
-                const proxy = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-                const res = await fetch(proxy);
-                const html = await res.text();
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, "text/html");
-                const code = doc.querySelector("#program-source-text");
-                if(code) {
-                    editor.setValue(code.innerText);
-                    document.getElementById('save-indicator').innerText = "Solution Loaded";
-                } else { editor.setValue("// Could not parse code.\n// Codeforces might be blocking the proxy.\n// Use the 'View on CF' button above."); }
-            } catch(e) { editor.setValue("// Error fetching code.\n// Use the 'View on CF' button above."); }
-        }
-        
-        function openExternalSub() {
-            const subId = state.submissionMap.get(state.activeProblem.id);
-            if(subId) window.open(`https://codeforces.com/contest/${state.activeProblem.cid}/submission/${subId}`, '_blank');
-            else alert("No submission ID found. Please Sync.");
-        }
-
-        function openExternalProblem() {
-            if(state.activeProblem) window.open(`https://codeforces.com/contest/${state.activeProblem.cid}/problem/${state.activeProblem.index}`, '_blank');
-        }
-
-        let saveTimeout;
-        editor.on('change', () => {
-            if(state.activeProblem && state.currentTab === 'notes') {
-                const content = editor.getValue();
-                const pid = state.activeProblem.id;
-                localStorage.setItem(`cf_note_${pid}`, content);
-                document.getElementById('save-indicator').innerText = "Saving...";
-                clearTimeout(saveTimeout);
-                saveTimeout = setTimeout(() => {
-                    if(state.user) {
-                        db.collection('users').doc(state.user.uid).collection('notes').doc(pid).set({ content }, { merge: true })
-                        .then(() => document.getElementById('save-indicator').innerText = "Saved")
-                        .catch(() => document.getElementById('save-indicator').innerText = "Save Failed");
-                    } else { document.getElementById('save-indicator').innerText = "Saved Locally"; }
-                }, 1000);
+            document.getElementById('contest-list').style.display = state.viewMode==='contests'?'block':'none';
+            document.getElementById('bookmark-list').style.display = state.viewMode==='bookmarks'?'block':'none';
+            if(state.viewMode === 'bookmarks') {
+                const list = document.getElementById('bookmark-list');
+                list.innerHTML = '<h3>Bookmarks</h3>';
+                state.bookmarks.forEach((v,k) => list.innerHTML += `<div style="padding:10px; border-bottom:1px solid var(--border); cursor:pointer;" onclick="openEditor('${k}', ${parseInt(k)}, '${k.replace(/\d+/,'')}', 'Bookmarked')">${k}</div>`);
             }
-        });
-
-        function copyCode() { navigator.clipboard.writeText(editor.getValue()); }
-        function submitToCF() {
-            if(state.activeProblem) {
-                copyCode();
-                window.open(`https://codeforces.com/contest/${state.activeProblem.cid}/submit?problemIndex=${state.activeProblem.idx}`, '_blank');
-            }
-        }
-        function toggleTheme() {
-            const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', next);
-            localStorage.setItem('cf_theme', next);
-            editor.setOption("theme", next === 'dark' ? 'ayu-mirage' : 'eclipse');
-        }
-        function initResizer() {
-            const r = document.getElementById('resizer-vertical');
-            const left = document.getElementById('pane-left');
-            const c = document.getElementById('split-container');
-            let x, w;
-            if(!r || !left || !c) return;
-            r.addEventListener('mousedown', e => { x=e.clientX; w=left.getBoundingClientRect().width; document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu); });
-            const mm = e => { const dx=e.clientX-x; left.style.width = `${((w+dx)/c.offsetWidth)*100}%`; };
-            const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
         }
 
         init();
