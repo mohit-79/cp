@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CF Tracker Pro v33 (Compiler Integrated)</title>
+    <title>CF Tracker Pro v33 (Cloud Compiler)</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/ayu-mirage.min.css">
@@ -42,17 +42,10 @@
             --highlight: rgba(210, 153, 34, 0.3);
         }
 
-        /* --- GLOBAL --- */
         * { box-sizing: border-box; outline: none; }
         body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-main); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
 
-        /* --- SIDEBAR --- */
-        #sidebar { 
-            width: 400px; background: var(--bg-sidebar); display: flex; flex-direction: column; 
-            flex-shrink: 0; border-right: 1px solid var(--border); 
-            position: absolute; left: 0; top: 0; bottom: 0; z-index: 100;
-            transition: transform 0.3s ease;
-        }
+        #sidebar { width: 450px; background: var(--bg-sidebar); display: flex; flex-direction: column; flex-shrink: 0; border-right: 1px solid var(--border); position: absolute; left: 0; top: 0; bottom: 0; z-index: 100; transition: transform 0.3s ease; }
         #sidebar.collapsed { transform: translateX(-100%); }
 
         .header-panel { padding: 10px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); display: flex; flex-direction: column; gap: 8px; }
@@ -84,7 +77,8 @@
         .btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); padding: 0 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; }
         .btn:hover { background: var(--bg-hover); }
         .btn-primary { background: var(--success); border-color: var(--success); color: white; }
-        .btn-run { background: var(--success); color: white; border-color: var(--success); }
+        .btn-run { background: var(--success); color: white; border-color: var(--success); min-width: 120px; }
+        .btn-run:disabled { background: #555; border-color: #555; cursor: wait; }
         .btn-sm { font-size: 0.75rem; padding: 2px 10px; height: 24px; }
 
         #bg-stats { font-size: 0.75rem; color: var(--accent); margin-top: 2px; height: 14px; white-space: nowrap; overflow: hidden; }
@@ -142,14 +136,14 @@
         
         #preview-content { font-size: 0.95rem; line-height: 1.6; color: var(--text-primary); }
         #preview-content img { max-width: 100%; display: block; margin: 10px 0; }
-        #preview-content .title { font-size: 1.3rem; font-weight: bold; margin-bottom: 15px; color: var(--accent); }
-        #preview-content .header { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+        #preview-content .title { font-size: 1.3rem; font-weight: bold; margin-bottom: 10px; color: var(--accent); }
+        #preview-content .header { margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
         #preview-content pre { background: var(--bg-sidebar); padding: 12px; border-radius: 6px; border: 1px solid var(--border); font-family: 'Fira Code', monospace; white-space: pre-wrap; word-wrap: break-word; }
 
         /* Terminal Grid */
         .terminal-grid { display: grid; grid-template-rows: 1fr 1fr; gap: 10px; height: 100%; }
         .io-box { display: flex; flex-direction: column; gap: 5px; height: 100%; }
-        .io-label { font-size: 0.75rem; color: var(--text-secondary); font-weight: bold; display:flex; justify-content: space-between; }
+        .io-label { font-size: 0.75rem; color: var(--text-secondary); font-weight: bold; }
         textarea.io-area { 
             flex: 1; background: var(--bg-sidebar); border: 1px solid var(--border); 
             color: var(--text-primary); font-family: 'Fira Code', monospace; padding: 10px; resize: none; 
@@ -158,6 +152,10 @@
         #empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-secondary); position: absolute; top:0; left:0; right:0; bottom:0; z-index: 50; background: var(--bg-main); }
         #ide-container { display: none; flex-direction: column; height: 100%; width: 100%; }
         #cloud-loader { height: 2px; background: linear-gradient(90deg, var(--accent), var(--success)); width: 0%; position: absolute; top: 0; left: 0; z-index: 200; transition: 0.3s; }
+        
+        /* Spinner */
+        .spinner { border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top: 2px solid white; width: 12px; height: 12px; animation: spin 1s linear infinite; display: none; margin-right: 5px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -260,11 +258,14 @@
                             </div>
                             <div class="io-box">
                                 <span class="io-label">OUTPUT</span>
-                                <textarea id="term-output" class="io-area" placeholder="Run to see output..."></textarea>
+                                <textarea id="term-output" class="io-area" placeholder="Run code to see output..."></textarea>
                             </div>
                         </div>
                         <div style="padding:10px; border-top:1px solid var(--border); display:flex; justify-content:flex-end;">
-                            <button class="btn btn-run" id="runBtn" onclick="runCode()">▶ Run (Online)</button>
+                            <button class="btn btn-run" id="runBtn" onclick="runCode()">
+                                <div class="spinner" id="runSpinner"></div>
+                                <span id="runBtnText">▶ Run (Online)</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -337,13 +338,16 @@
         // --- COMPILER INTEGRATION (PISTON) ---
         async function runCode() {
             const btn = document.getElementById('runBtn');
+            const btnText = document.getElementById('runBtnText');
+            const spinner = document.getElementById('runSpinner');
             const output = document.getElementById('term-output');
             const source = editor.getValue();
             const stdin = document.getElementById('term-input').value;
 
-            btn.innerText = "Running...";
             btn.disabled = true;
-            output.value = "Compiling and Executing in Cloud...";
+            btnText.innerText = "Compiling...";
+            spinner.style.display = "inline-block";
+            output.value = "Sending to server...";
 
             const payload = {
                 language: "cpp",
@@ -367,15 +371,15 @@
                 if(data.run) {
                     if(data.run.stdout) resultText += data.run.stdout;
                     if(data.run.stderr) resultText += "\n--- RUNTIME ERROR ---\n" + data.run.stderr;
-                    if(!resultText) resultText = "[Program finished with no output]";
+                    if(!resultText && !data.compile.stderr) resultText = "[Program finished with no output]";
                 }
-                
                 output.value = resultText;
             } catch(e) {
                 output.value = "Error connecting to compiler service.";
             } finally {
-                btn.innerText = "▶ Run (Online)";
                 btn.disabled = false;
+                btnText.innerText = "▶ Run (Online)";
+                spinner.style.display = "none";
             }
         }
 
