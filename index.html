@@ -3,20 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CF Tracker Pro v32 (Fix Fetch)</title>
+    <title>CF Tracker Pro v30 (IDE View)</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/ayu-mirage.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/eclipse.min.css">
     
-    <script>
-        window.MathJax = {
-            tex: { inlineMath: [['$', '$'], ['$$', '$$'], ['\\(', '\\)']] },
-            startup: { typeset: false } // We will trigger manually
-        };
-    </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -45,7 +37,7 @@
             --highlight: rgba(210, 153, 34, 0.3);
         }
 
-        /* Ratings */
+        /* Codeforces Rating Colors */
         .u-gray { background-color: #808080; color: white; }
         .u-green { background-color: #008000; color: white; }
         .u-cyan { background-color: #03a89e; color: white; }
@@ -57,9 +49,24 @@
         * { box-sizing: border-box; outline: none; }
         body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-main); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
 
-        #sidebar { width: 480px; background: var(--bg-sidebar); display: flex; flex-direction: column; flex-shrink: 0; border-right: 1px solid var(--border); position: relative; }
-        .header-panel { padding: 10px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); display: flex; flex-direction: column; gap: 8px; }
+        /* --- SIDEBAR --- */
+        #sidebar { 
+            width: 480px; 
+            background: var(--bg-sidebar); 
+            display: flex; 
+            flex-direction: column; 
+            flex-shrink: 0; 
+            border-right: 1px solid var(--border); 
+            position: relative; 
+            transition: margin-left 0.3s ease; /* Smooth Slide */
+        }
         
+        /* HIDDEN STATE */
+        #sidebar.collapsed {
+            margin-left: -480px;
+        }
+
+        .header-panel { padding: 10px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); display: flex; flex-direction: column; gap: 8px; }
         .top-row { display: flex; justify-content: space-between; align-items: center; height: 28px; }
         .brand { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 6px; }
         .top-actions { display: flex; align-items: center; gap: 8px; }
@@ -67,20 +74,34 @@
         
         .control-row { display: flex; gap: 6px; height: 32px; }
         input[type="text"] { background: var(--bg-main); border: 1px solid var(--border); color: var(--text-primary); padding: 4px 10px; border-radius: 6px; flex: 1; font-size: 0.9rem; }
-        
+        #problemSearch { border-color: var(--border); }
+        #problemSearch:focus { border-color: var(--gold); }
+
+        #user-info-row { display: none; align-items: center; gap: 8px; font-size: 0.8rem; margin-top: -4px; margin-bottom: 2px; }
+        #rating-pill { padding: 1px 6px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; }
+        #profile-link { text-decoration: none; color: var(--text-secondary); display: flex; align-items: center; gap: 3px; }
+        #profile-link:hover { color: var(--accent); }
+
         .btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); padding: 0 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; }
         .btn:hover { background: var(--bg-hover); }
         .btn-primary { background: var(--success); border-color: var(--success); color: white; }
         .btn-sm { font-size: 0.75rem; padding: 2px 10px; height: 24px; }
         
-        #user-info-row { display: none; align-items: center; gap: 8px; font-size: 0.8rem; margin-top: -4px; margin-bottom: 2px; }
-        #rating-pill { padding: 1px 6px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; }
-        #profile-link { text-decoration: none; color: var(--text-secondary); display: flex; align-items: center; gap: 3px; }
+        .filter-row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px; flex-wrap: wrap;}
+        .filter-item { display: flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap; }
         
-        .filter-row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px; flex-wrap: wrap; }
-        #divFilter { background: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border); border-radius: 4px; padding: 2px 4px; font-size: 0.8rem; cursor: pointer; height: 24px; }
-        .filter-item { display: flex; align-items: center; gap: 5px; cursor: pointer; }
-        
+        #divFilter {
+            background: var(--bg-main);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 2px 4px;
+            font-size: 0.8rem;
+            outline: none;
+            cursor: pointer;
+            height: 24px;
+        }
+
         #bg-stats { font-size: 0.75rem; color: var(--accent); margin-top: 2px; height: 14px; white-space: nowrap; overflow: hidden; }
 
         #contest-list, #bookmark-list { flex: 1; overflow-y: auto; padding: 10px; scroll-behavior: smooth; }
@@ -91,7 +112,7 @@
         .contest-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; border-top: 1px solid transparent; background: var(--bg-card); }
         .contest-card.open .contest-body { max-height: 5000px; border-top-color: var(--border); }
 
-        .problem-row { display: grid; grid-template-columns: 24px 35px 1fr 60px; align-items: start; padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); gap: 8px; transition: background 0.5s; }
+        .problem-row { display: grid; grid-template-columns: 24px 35px 1fr 60px; align-items: start; padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); gap: 8px; transition: background 0.5s; cursor: pointer; }
         .problem-row:hover { background: var(--bg-hover); }
         .problem-row.solved { border-left: 3px solid var(--success); background: rgba(35, 134, 54, 0.08); }
         .problem-row.highlight-row { animation: flashHighlight 2s ease-out; border-left: 3px solid var(--gold); }
@@ -111,8 +132,7 @@
         .icon-btn.starred { color: var(--gold); opacity: 1; }
         .icon-btn.has-note { color: var(--accent); opacity: 1; }
 
-        /* Main Workspace */
-        #main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-main); }
+        #main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-main); transition: margin-left 0.3s ease; }
         #editor-container { display: none; flex-direction: column; height: 100%; }
         .editor-header { background: var(--bg-sidebar); border-bottom: 1px solid var(--border); display: flex; flex-direction: column; }
         .editor-tabs { display: flex; gap: 2px; padding: 0 10px; margin-top: 10px; }
@@ -123,29 +143,8 @@
         .save-status { font-size: 0.75rem; color: var(--text-secondary); margin-right: 10px; font-style: italic; }
         #view-sub-btn { display: none; }
 
-        /* Right Pane Preview */
-        .tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); }
-        .tab { padding: 8px 16px; cursor: pointer; font-size: 0.85rem; border-right: 1px solid var(--border); opacity: 0.7; }
-        .tab.active { background: var(--bg-main); opacity: 1; font-weight: bold; border-top: 2px solid var(--accent); }
-        #preview-content, #terminal-content { flex: 1; overflow-y: auto; padding: 20px; display: none; }
-        #preview-content.active, #terminal-content.active { display: block; }
-        
-        #preview-content { font-size: 0.95rem; line-height: 1.6; color: var(--text-primary); }
-        #preview-content img { max-width: 100%; height: auto; display: block; margin: 10px 0; border-radius: 4px; }
-        #preview-content .title { font-size: 1.3rem; font-weight: bold; margin-bottom: 15px; color: var(--accent); }
-        #preview-content .header { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
-        #preview-content .input-specification, #preview-content .output-specification { margin-top: 20px; }
-        #preview-content .section-title { font-weight: bold; font-size: 1rem; margin-bottom: 8px; color: var(--text-secondary); }
-        #preview-content pre { background: var(--bg-sidebar); padding: 12px; border-radius: 6px; border: 1px solid var(--border); font-family: 'Fira Code', monospace; white-space: pre-wrap; word-wrap: break-word; }
-
-        /* Terminal */
-        .terminal-grid { display: grid; grid-template-rows: 1fr 1fr; gap: 10px; height: 100%; }
-        .io-box { display: flex; flex-direction: column; gap: 5px; }
-        .io-label { font-size: 0.75rem; color: var(--text-secondary); font-weight: bold; }
-        textarea.io-area { flex: 1; background: var(--bg-sidebar); border: 1px solid var(--border); color: var(--text-primary); font-family: monospace; padding: 10px; resize: none; }
-
-        #cloud-loader { height: 2px; background: linear-gradient(90deg, var(--accent), var(--success)); width: 0%; position: absolute; top: 0; left: 0; z-index: 200; transition: 0.3s; }
-        #resizer-vertical { width: 5px; background: var(--bg-sidebar); cursor: col-resize; z-index: 10; border-left: 1px solid var(--border); }
+        #cloud-loader { height: 2px; background: linear-gradient(90deg, var(--accent), var(--success)); width: 0%; transition: 0.3s; position: absolute; top: 0; left: 0; z-index: 50; }
+        #resizer { width: 5px; cursor: col-resize; background: transparent; position: absolute; right: 0; top: 0; bottom: 0; z-index: 10; }
         #empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-secondary); }
     </style>
 </head>
@@ -195,6 +194,7 @@
         </div>
         <div id="contest-list"><div id="sentinel" style="height: 20px;"></div></div>
         <div id="bookmark-list"></div>
+        <div id="resizer"></div>
     </div>
 
     <div id="main-content">
@@ -209,7 +209,10 @@
                     <div class="tab-btn" id="tab-solution" onclick="switchTab('solution')">My Solution</div>
                 </div>
                 <div class="editor-toolbar">
-                    <span id="active-title" style="font-weight:bold; font-size:0.9rem;">Problem</span>
+                    <div style="display:flex; align-items:center; gap: 10px;">
+                        <button class="btn" onclick="toggleSidebar()" title="Toggle Sidebar">☰</button>
+                        <span id="active-title" style="font-weight:bold; font-size:0.9rem;">Problem</span>
+                    </div>
                     <div style="display:flex; align-items:center; gap:5px;">
                         <span class="save-status" id="save-indicator">Saved</span>
                         <button class="btn" id="view-sub-btn" onclick="openExternalSub()">↗ View on CF</button>
@@ -219,36 +222,7 @@
                     </div>
                 </div>
             </div>
-            
-            <div id="split-container" style="flex:1; display:flex; overflow:hidden;">
-                <div id="pane-left" style="width:50%; display:flex; flex-direction:column; border-right:1px solid var(--border);">
-                    <textarea id="code-editor"></textarea>
-                </div>
-                <div id="resizer-vertical"></div>
-                <div id="pane-right" style="flex:1; display:flex; flex-direction:column; background:var(--bg-main); overflow:hidden;">
-                    <div class="tabs">
-                        <div class="tab active" onclick="setRightTab('preview')">Problem Statement</div>
-                        <div class="tab" onclick="setRightTab('terminal')">Terminal (Sample I/O)</div>
-                    </div>
-                    
-                    <div id="preview-content" class="active">
-                        <div style="text-align:center; padding:20px; color:gray;">Select a problem to view.</div>
-                    </div>
-
-                    <div id="terminal-content">
-                        <div class="terminal-grid">
-                            <div class="io-box">
-                                <span class="io-label">INPUT (Auto-filled)</span>
-                                <textarea id="term-input" class="io-area"></textarea>
-                            </div>
-                            <div class="io-box">
-                                <span class="io-label">OUTPUT COMPARISON</span>
-                                <textarea id="term-output" class="io-area" placeholder="Paste local output here..."></textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <textarea id="code-editor"></textarea>
         </div>
     </div>
 
@@ -282,7 +256,7 @@
         };
 
         const editor = CodeMirror.fromTextArea(document.getElementById("code-editor"), {
-            mode: "text/x-c++src", lineNumbers: true, theme: "ayu-mirage", autoCloseBrackets: true
+            mode: "text/x-c++src", lineNumbers: true, autoCloseBrackets: true
         });
 
         async function init() {
@@ -410,7 +384,6 @@
                     const pill = document.getElementById('rating-pill');
                     const row = document.getElementById('user-info-row');
                     const link = document.getElementById('profile-link');
-                    
                     const r = u.rating || 0;
                     pill.innerText = `${u.rank || 'user'} (${r})`;
                     pill.className = 'rating-pill'; 
@@ -421,13 +394,13 @@
                     else if (r < 2100) pill.classList.add('u-violet');
                     else if (r < 2400) pill.classList.add('u-orange');
                     else pill.classList.add('u-red');
-
                     link.href = `https://codeforces.com/profile/${handle}`;
                     row.style.display = 'flex';
                 }
             } catch(e) {}
         }
 
+        // --- SEARCH ---
         async function searchProblem() {
             const query = document.getElementById('problemSearch').value.trim().toUpperCase();
             if(!query) return;
@@ -455,90 +428,12 @@
                     row.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     row.classList.add('highlight-row');
                     setTimeout(() => row.classList.remove('highlight-row'), 2500);
-                    // AUTO OPEN PROBLEM
-                    openProblem(cid, index, row.querySelector('.p-name').innerText);
+                    // Open Editor Automatically
+                    openEditor(pid, cid, index, row.querySelector('.p-name').innerText);
                 } else { alert(`Problem ${index} not found in Contest ${cid}`); }
             }, 500);
         }
 
-        // --- PROBLEM LOADING & PREVIEW ---
-        async function openProblem(cid, index, name) {
-            state.activeProblem = { cid, index, name, id: `${cid}${index}` };
-            document.getElementById('active-problem-name').innerText = `${index}. ${name}`;
-            document.getElementById('sidebar').classList.add('collapsed'); 
-            document.getElementById('workspace').style.marginLeft = "0"; // Full width
-            
-            document.getElementById('empty-state').style.display = 'none';
-            document.getElementById('editor-container').style.display = 'flex';
-
-            switchTab('notes');
-            
-            // Notes handling
-            if(state.user) {
-                const noteRef = db.collection('users').doc(state.user.uid).collection('notes').doc(state.activeProblem.id);
-                noteRef.get().then(doc => {
-                    const code = doc.exists ? doc.data().content : (localStorage.getItem(`cf_note_${state.activeProblem.id}`) || getDefaultTemplate(name));
-                    editor.setValue(code);
-                });
-            } else {
-                editor.setValue(localStorage.getItem(`cf_note_${state.activeProblem.id}`) || getDefaultTemplate(name));
-            }
-
-            // Fetch Preview
-            loadProblemPreview(cid, index);
-        }
-
-        function getDefaultTemplate(name) {
-            return `// ${name}\n#include <bits/stdc++.h>\nusing namespace std;\n\nvoid solve() {\n    \n}\n\nint main() {\n    ios::sync_with_stdio(0); cin.tie(0);\n    int t; cin >> t;\n    while(t--) solve();\n}`;
-        }
-
-        async function loadProblemPreview(cid, index) {
-            const previewDiv = document.getElementById('preview-content');
-            previewDiv.innerHTML = '<div style="padding:20px; text-align:center;">Fetching...</div>';
-            
-            // Use AllOrigins which is JSON based, less blocked
-            const url = `https://codeforces.com/contest/${cid}/problem/${index}`;
-            const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-
-            try {
-                const res = await fetch(proxy);
-                const data = await res.json();
-                if(!data.contents) throw new Error("No Content");
-
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(data.contents, 'text/html');
-                
-                // Block Check
-                if(doc.title === "Just a moment..." || doc.body.innerText.includes("security check")) { throw new Error("Cloudflare"); }
-
-                let statement = doc.querySelector('.problem-statement') || doc.querySelector('.ttypography');
-                if(statement) {
-                    // Fix Images
-                    statement.querySelectorAll('img').forEach(img => {
-                        const src = img.getAttribute('src');
-                        if(src && src.startsWith('/')) img.src = 'https://codeforces.com' + src;
-                    });
-                    
-                    // Render
-                    previewDiv.innerHTML = statement.innerHTML;
-                    if(window.MathJax) MathJax.typesetPromise([previewDiv]);
-
-                    // Extract Inputs
-                    const inputPre = statement.querySelector('.input pre');
-                    const outputPre = statement.querySelector('.output pre');
-                    const inputVal = inputPre ? inputPre.innerText : "";
-                    const outputVal = outputPre ? outputPre.innerText : "";
-                    
-                    document.getElementById('term-input').value = inputVal;
-                    document.getElementById('term-output').placeholder = `Expected:\n${outputVal}`;
-                } else { throw new Error("Selector Fail"); }
-
-            } catch(e) {
-                previewDiv.innerHTML = `<div style="padding:20px; text-align:center; color:gray;"><h3>Load Failed (Security)</h3><button class="btn btn-primary" onclick="window.open('${url}', '_blank')">Open in New Tab</button></div>`;
-            }
-        }
-
-        // --- BACKGROUND STATS ---
         function startBackgroundProgressFetch() {
             state.bgFetchQueue = [...state.attemptedContests].filter(cid => !state.contestTotals.has(cid));
             state.bgFetchQueue.sort((a,b) => b - a);
@@ -583,12 +478,9 @@
             const onlyStandard = document.getElementById('roundFilter').checked;
             const onlyAttempted = document.getElementById('attemptedFilter').checked;
             const divFilter = document.getElementById('divFilter').value;
-
             state.filteredContests = state.allContests.filter(c => {
                 const n = c.name;
-                if(onlyStandard) {
-                    if(!((n.includes("Codeforces Round") || n.includes("Educational")) && !n.includes("Hello") && !n.includes("Good Bye") && !n.includes("ICPC"))) return false;
-                }
+                if(onlyStandard && !((n.includes("Codeforces Round") || n.includes("Educational")) && !n.includes("Hello") && !n.includes("Good Bye") && !n.includes("ICPC"))) return false;
                 if(onlyAttempted && !state.attemptedContests.has(c.id)) return false;
                 if(divFilter !== "ALL" && !n.includes(divFilter)) return false;
                 return true;
@@ -664,7 +556,16 @@
             let ratingHtml = p.rating ? `<span class="topic-pill rating-pill">${p.rating}</span>` : '';
             const tagsHtml = (p.tags || []).map(t => `<span class="topic-pill">${t}</span>`).join('');
             const cleanName = p.name.replace(/'/g,"");
-            return `<div class="problem-row ${isSolved ? 'solved' : ''}" id="row-${pid}" onclick="openProblem(${cid}, '${p.index}', '${cleanName}')"><div class="p-status">${isSolved ? '✅' : ''}</div><div class="p-index">${p.index}</div><div class="p-content"><div class="p-name">${p.name}</div><div class="topic-list">${ratingHtml+tagsHtml}</div></div><div class="p-actions"><button class="icon-btn ${isBookmarked ? 'starred' : ''}" onclick="event.stopPropagation(); toggleBookmark('${pid}', ${cid}, '${p.index}', '${cleanName}', ${p.rating||0}, '${(p.tags||[]).join(",")}')">★</button></div></div>`;
+            
+            // WHOLE ROW CLICKABLE
+            return `<div class="problem-row ${isSolved ? 'solved' : ''}" id="row-${pid}" onclick="openEditor('${pid}', ${cid}, '${p.index}', '${cleanName}')">
+                <div class="p-status">${isSolved ? '✅' : ''}</div>
+                <div class="p-index">${p.index}</div>
+                <div class="p-content"><div class="p-name">${p.name}</div><div class="topic-list">${ratingHtml+tagsHtml}</div></div>
+                <div class="p-actions">
+                    <button class="icon-btn ${isBookmarked ? 'starred' : ''}" onclick="event.stopPropagation(); toggleBookmark('${pid}', ${cid}, '${p.index}', '${cleanName}', ${p.rating||0}, '${(p.tags||[]).join(",")}')">★</button>
+                </div>
+            </div>`;
         }
 
         function toggleBookmark(pid, cid, idx, name, rating, tags) {
@@ -701,12 +602,11 @@
             state.currentTab = tabName;
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`tab-${tabName}`).classList.add('active');
-            
             document.getElementById('view-sub-btn').style.display = (tabName === 'solution') ? 'block' : 'none';
 
             if(tabName === 'notes') {
                 editor.setOption("readOnly", false);
-                const content = localStorage.getItem(`cf_note_${state.activeProblem.id}`) || getDefaultTemplate(state.activeProblem.name);
+                const content = localStorage.getItem(`cf_note_${state.activeProblem.id}`) || `// ${state.activeProblem.name}\n#include <bits/stdc++.h>\nusing namespace std;\n\nvoid solve() {\n    \n}\n\nint main() {\n    ios::sync_with_stdio(0); cin.tie(0);\n    int t; cin >> t;\n    while(t--) solve();\n}`;
                 editor.setValue(content);
                 document.getElementById('save-indicator').innerText = "Notes Loaded";
             } else {
@@ -740,26 +640,35 @@
             else alert("No submission ID found. Please Sync.");
         }
 
+        // --- NEW: SIDEBAR TOGGLE ---
         function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('collapsed');
+            const sb = document.getElementById('sidebar');
+            sb.classList.toggle('collapsed');
         }
 
-        function setRightTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById(`preview-content`).classList.remove('active');
-            document.getElementById(`terminal-content`).classList.remove('active');
-            event.target.classList.add('active');
-            document.getElementById(`${tab}-content`).classList.add('active');
-        }
+        async function openEditor(pid, cid, idx, name) {
+            state.activeProblem = { id: pid, cid, idx, name };
+            document.getElementById('empty-state').style.display = 'none';
+            document.getElementById('editor-container').style.display = 'flex';
+            document.getElementById('active-title').innerText = `${idx}. ${name}`;
+            
+            // Auto Collapse Sidebar
+            document.getElementById('sidebar').classList.add('collapsed');
 
-        function initSplitter() {
-            const resizer = document.getElementById('resizer-vertical');
-            const left = document.getElementById('pane-left');
-            let x = 0, w = 0;
-            const md = (e) => { x = e.clientX; w = left.getBoundingClientRect().width; document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu); };
-            const mm = (e) => { const dx = e.clientX - x; left.style.width = `${((w + dx) / document.getElementById('split-container').offsetWidth) * 100}%`; };
-            const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
-            resizer.addEventListener('mousedown', md);
+            switchTab('notes');
+            if(state.user) {
+                const noteRef = db.collection('users').doc(state.user.uid).collection('notes').doc(pid);
+                noteRef.get().then(doc => {
+                    if(doc.exists) {
+                        const cloudContent = doc.data().content;
+                        if(state.currentTab === 'notes' && cloudContent !== editor.getValue()) {
+                            editor.setValue(cloudContent);
+                            localStorage.setItem(`cf_note_${pid}`, cloudContent);
+                        }
+                    }
+                });
+            }
+            setTimeout(() => editor.refresh(), 10);
         }
 
         editor.on('change', () => {
@@ -783,6 +692,7 @@
             state.activeProblem = null;
             document.getElementById('editor-container').style.display = 'none';
             document.getElementById('empty-state').style.display = 'flex';
+            // Bring Sidebar Back
             document.getElementById('sidebar').classList.remove('collapsed');
         }
 
@@ -790,7 +700,7 @@
         function submitToCF() {
             if(state.activeProblem) {
                 copyCode();
-                window.open(`https://codeforces.com/contest/${state.activeProblem.cid}/submit?problemIndex=${state.activeProblem.index}`, '_blank');
+                window.open(`https://codeforces.com/contest/${state.activeProblem.cid}/submit?problemIndex=${state.activeProblem.idx}`, '_blank');
             }
         }
         function toggleTheme() {
@@ -800,14 +710,11 @@
             editor.setOption("theme", next === 'dark' ? 'ayu-mirage' : 'eclipse');
         }
         function initResizer() {
-            const r = document.getElementById('resizer-vertical');
-            if(!r) return;
-            const left = document.getElementById('pane-left');
-            let x = 0, w = 0;
-            const md = (e) => { x = e.clientX; w = left.getBoundingClientRect().width; document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu); };
-            const mm = (e) => { const dx = e.clientX - x; left.style.width = `${((w + dx) / document.getElementById('split-container').offsetWidth) * 100}%`; };
-            const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
-            r.addEventListener('mousedown', md);
+            const r = document.getElementById('resizer'), s = document.getElementById('sidebar');
+            let resizing = false;
+            r.addEventListener('mousedown', () => { resizing = true; document.body.style.cursor = 'col-resize'; });
+            document.addEventListener('mousemove', e => { if(resizing) s.style.width = Math.max(300, Math.min(800, e.clientX)) + 'px'; });
+            document.addEventListener('mouseup', () => { resizing = false; document.body.style.cursor = 'default'; });
         }
 
         init();
