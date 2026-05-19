@@ -588,7 +588,7 @@
         function toggleBookmark(pid, cid, idx, name, rating, tags) {
             if(state.bookmarks.has(pid)) state.bookmarks.delete(pid);
             else state.bookmarks.set(pid, { cid, idx, name, rating, tags: tags ? tags.split(',') : [] });
-            localStorage.setItem('cf_bookmarks_map', JSON.stringify([...state.bookmarks]));
+            localStorage.setItem('cf_bookmarks_map', JSON.stringify([...state.bookmarks]));   
             if(state.user) db.collection('users').doc(state.user.uid).set({ bookmarks: Object.fromEntries(state.bookmarks) }, { merge: true });
             const row = document.getElementById(`row-${pid}`);
             if(row) row.querySelector('.p-actions button:nth-child(1)').classList.toggle('starred');
