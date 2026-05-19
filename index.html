@@ -542,11 +542,27 @@
             const pid = `${cid}${p.index}`;
             const isSolved = state.solved.has(pid);
             const isBookmarked = state.bookmarks.has(pid);
+            
+            // FIX: Restored the complete local storage check
             const hasNote = localStorage.getItem(`cf_note_${pid}`) ? 'has-note' : '';
+            
             let ratingHtml = p.rating ? `<span class="topic-pill rating-pill">${p.rating}</span>` : '';
             const tagsHtml = (p.tags || []).map(t => `<span class="topic-pill">${t}</span>`).join('');
             const cleanName = p.name.replace(/'/g,"");
-            return `<div class="problem-row ${isSolved ? 'solved' : ''}" id="row-${pid}"><div class="p-status">${isSolved ? '✅' : ''}</div><div class="p-index">${p.index}</div><div class="p-content"><div class="p-name">${p.name}</div><div class="topic-list">${ratingHtml+tagsHtml}</div></div><div class="p-actions"><button class="icon-btn ${isBookmarked ? 'starred' : ''}" onclick="toggleBookmark('${pid}', ${cid}, '${p.index}', '${cleanName}', ${p.rating||0}, '${(p.tags||[]).join(",")}')">★</button><button class="icon-btn ${hasNote}" onclick="openEditor('${pid}', ${cid}, '${p.index}', '${cleanName}')">✎</button><a href="https://codeforces.com/contest/${cid}/problem/${p.index}" target="_blank" class="icon-btn">↗</a></div></div>`;
+            
+            return `<div class="problem-row ${isSolved ? 'solved' : ''}" id="row-${pid}">
+                <div class="p-status">${isSolved ? '✅' : ''}</div>
+                <div class="p-index">${p.index}</div>
+                <div class="p-content">
+                    <div class="p-name">${p.name}</div>
+                    <div class="topic-list">${ratingHtml+tagsHtml}</div>
+                </div>
+                <div class="p-actions">
+                    <button class="icon-btn ${isBookmarked ? 'starred' : ''}" onclick="toggleBookmark('${pid}', ${cid}, '${p.index}', '${cleanName}', ${p.rating||0}, '${(p.tags||[]).join(",")}')">★</button>
+                    <button class="icon-btn ${hasNote}" onclick="openEditor('${pid}', ${cid}, '${p.index}', '${cleanName}')">✎</button>
+                    <a href="https://codeforces.com/contest/${cid}/problem/${p.index}" target="_blank" class="icon-btn">↗</a>
+                </div>
+            </div>`;
         }
 
         function toggleBookmark(pid, cid, idx, name, rating, tags) {
