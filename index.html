@@ -37,7 +37,6 @@
             --highlight: rgba(210, 153, 34, 0.3);
         }
 
-        /* Codeforces Rating Colors */
         .u-gray { background-color: #808080; color: white; }
         .u-green { background-color: #008000; color: white; }
         .u-cyan { background-color: #03a89e; color: white; }
@@ -75,7 +74,6 @@
         .filter-row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px; flex-wrap: wrap;}
         .filter-item { display: flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap; }
         
-        /* DROPDOWN STYLE */
         #divFilter {
             background: var(--bg-main);
             color: var(--text-primary);
@@ -420,7 +418,11 @@
         function startBackgroundProgressFetch() {
             state.bgFetchQueue = [...state.attemptedContests].filter(cid => !state.contestTotals.has(cid));
             state.bgFetchQueue.sort((a,b) => b - a);
-            if(state.bgFetchQueue.length > 0) { updateStatsBar(); processBackgroundQueue(); }
+            if(state.bgFetchQueue.length > 0) { 
+                updateStatsBar(); 
+                // Delay background initialization to keep the primary user sync connection from timing out
+                setTimeout(processBackgroundQueue, 2500); 
+            }
             else { document.getElementById('bg-stats').innerText = "Stats synced."; setTimeout(() => document.getElementById('bg-stats').innerText = "", 3000); }
         }
 
@@ -438,7 +440,8 @@
                     }
                 })
                 .catch(e => {})
-                .finally(() => setTimeout(processBackgroundQueue, 800));
+                // strict compliance window tracking (2.5s) to avoid client IP blockades
+                .finally(() => setTimeout(processBackgroundQueue, 2500)); 
         }
 
         function updateStatsBar() { 
@@ -530,25 +533,32 @@
                             }
                             renderProblemsInBody(body, problems, cid);
                             body.dataset.loaded = "true";
+                        } else {
+                            // UI Error Catching exposure
+                            body.innerHTML = `<div style="color:var(--danger); font-size:0.85rem; padding:12px; text-align:center">⚠️ Error: ${data.comment || 'Request Throttled'}</div>`;
                         }
-                    } catch(e) { body.innerHTML = '<div style="color:var(--danger); padding:10px">Error</div>'; }
+                    } catch(e) { 
+                        body.innerHTML = '<div style="color:var(--danger); font-size:0.85rem; padding:12px; text-align:center">❌ Drop Failed Connection</div>'; 
+                    }
                 }
             }
         }
 
-        function renderProblemsInBody(body, problems, cid) { body.innerHTML = problems.map(p => createProblemHTML(p, cid)).join(''); }
+        function renderProblemsInBody(body, problems, cid) { 
+            body.innerHTML = problems.map(p => createProblemHTML(p, cid)).join(''); 
+        }
 
         function createProblemHTML(p, cid) {
             const pid = `${cid}${p.index}`;
             const isSolved = state.solved.has(pid);
             const isBookmarked = state.bookmarks.has(pid);
-            
-            // FIX: Restored the complete local storage check
             const hasNote = localStorage.getItem(`cf_note_${pid}`) ? 'has-note' : '';
             
             let ratingHtml = p.rating ? `<span class="topic-pill rating-pill">${p.rating}</span>` : '';
             const tagsHtml = (p.tags || []).map(t => `<span class="topic-pill">${t}</span>`).join('');
-            const cleanName = p.name.replace(/'/g,"");
+            
+            const metaObj = { pid, cid, idx: p.index, name: p.name, rating: p.rating || 0, tags: p.tags || [] };
+            const b64Meta = btoa(unescape(encodeURIComponent(JSON.stringify(metaObj))));
             
             return `<div class="problem-row ${isSolved ? 'solved' : ''}" id="row-${pid}">
                 <div class="p-status">${isSolved ? '✅' : ''}</div>
@@ -558,11 +568,21 @@
                     <div class="topic-list">${ratingHtml+tagsHtml}</div>
                 </div>
                 <div class="p-actions">
-                    <button class="icon-btn ${isBookmarked ? 'starred' : ''}" onclick="toggleBookmark('${pid}', ${cid}, '${p.index}', '${cleanName}', ${p.rating||0}, '${(p.tags||[]).join(",")}')">★</button>
-                    <button class="icon-btn ${hasNote}" onclick="openEditor('${pid}', ${cid}, '${p.index}', '${cleanName}')">✎</button>
+                    <button class="icon-btn ${isBookmarked ? 'starred' : ''}" data-meta="${b64Meta}" onclick="handleBookmarkClick(this)">★</button>
+                    <button class="icon-btn ${hasNote}" data-meta="${b64Meta}" onclick="handleEditorClick(this)">✎</button>
                     <a href="https://codeforces.com/contest/${cid}/problem/${p.index}" target="_blank" class="icon-btn">↗</a>
                 </div>
             </div>`;
+        }
+
+        function handleBookmarkClick(btn) {
+            const meta = JSON.parse(decodeURIComponent(escape(atob(btn.dataset.meta))));
+            toggleBookmark(meta.pid, meta.cid, meta.idx, meta.name, meta.rating, meta.tags.join(","));
+        }
+
+        function handleEditorClick(btn) {
+            const meta = JSON.parse(decodeURIComponent(escape(atob(btn.dataset.meta))));
+            openEditor(meta.pid, meta.cid, meta.idx, meta.name);
         }
 
         function toggleBookmark(pid, cid, idx, name, rating, tags) {
@@ -604,7 +624,7 @@
 
             if(tabName === 'notes') {
                 editor.setOption("readOnly", false);
-                const content = localStorage.getItem(`cf_note_${state.activeProblem.id}`) || `// ${state.activeProblem.name}\n#include <bits/stdc++.h>\nusing namespace std;\n\nvoid solve() {\n    \n}\n\nint main() {\n    ios::sync_with_stdio(0); cin.tie(0);\n    int t; cin >> t;\n    while(t--) solve();\n}`;
+                const content = localStorage.getItem(`cf_note_${state.activeProblem.id}`) || `// ${state.activeProblem.name}\n#include <bits/stdc++.h>\nusing namespace std;\n\nvoid solve() {\n    \n}\n\nint main() {\n    ios::sync_with_stdio(0); cin.tie(0);\n    int t; cin >> t;\n    while(t--) solve();\n}`;
                 editor.setValue(content);
                 document.getElementById('save-indicator').innerText = "Notes Loaded";
             } else {
