@@ -130,6 +130,10 @@
         #cloud-loader { height: 2px; background: linear-gradient(90deg, var(--accent), var(--success)); width: 0%; transition: 0.3s; position: absolute; top: 0; left: 0; z-index: 50; }
         #resizer { width: 5px; cursor: col-resize; background: transparent; position: absolute; right: 0; top: 0; bottom: 0; z-index: 10; }
         #empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-secondary); }
+
+        /* Cache warning toast */
+        #cache-toast { position: fixed; bottom: 20px; right: 20px; background: var(--bg-card); border: 1px solid var(--gold); color: var(--text-primary); padding: 10px 16px; border-radius: 8px; font-size: 0.8rem; z-index: 999; display: none; max-width: 280px; }
+        #cache-toast button { margin-left: 10px; background: var(--gold); border: none; color: #000; border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -150,6 +154,7 @@
                 <input type="text" id="handleInput" placeholder="Handle" onchange="syncUser()">
                 <button class="btn btn-primary" id="syncBtn" onclick="syncUser()" title="Sync">↻</button>
                 <button class="btn" id="bmBtn" onclick="toggleBookmarksView()" title="Bookmarks">★</button>
+                <button class="btn btn-sm" onclick="clearContestCache()" title="Clear problem cache if problems aren't loading" style="font-size:0.7rem; padding:0 8px; color:var(--text-secondary);">🗑</button>
             </div>
 
             <div id="user-info-row">
@@ -207,6 +212,12 @@
         </div>
     </div>
 
+    <!-- Cache warning toast -->
+    <div id="cache-toast">
+        ⚠️ Problem cache may be full or corrupted.
+        <button onclick="clearContestCache()">Clear Cache</button>
+    </div>
+
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyCrNSBbljjJ0AUlGlQQtJixmEyDwGdYuZQ",
@@ -225,13 +236,99 @@
         const API_USER = 'https://codeforces.com/api/user.status';
         const API_INFO = 'https://codeforces.com/api/user.info';
 
+        // ── SAFE localStorage helpers ──────────────────────────────────────────
+        // The #1 root cause: after months of caching contest problems (each contest
+        // is ~2-10KB), the 5 MB localStorage quota fills up. Writes silently fail,
+        // reads return null or corrupt JSON, and the entire toggleContest() crashes
+        // inside an empty catch block – so problems never appear.
+
+        function lsGet(key, fallback = null) {
+            try {
+                const v = localStorage.getItem(key);
+                if (v === null) return fallback;
+                return JSON.parse(v);
+            } catch(e) {
+                console.warn('lsGet parse error for', key, e);
+                return fallback;
+            }
+        }
+
+        function lsSet(key, value) {
+            try {
+                localStorage.setItem(key, JSON.stringify(value));
+                return true;
+            } catch(e) {
+                // QuotaExceededError – cache is full
+                console.warn('localStorage quota exceeded. Showing cache toast.', e);
+                showCacheToast();
+                return false;
+            }
+        }
+
+        function lsRemove(key) {
+            try { localStorage.removeItem(key); } catch(e) {}
+        }
+
+        function showCacheToast() {
+            const t = document.getElementById('cache-toast');
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 8000);
+        }
+
+        // Cache version tag – bump this to force-invalidate all contest problem caches
+        // when CF changes its API response shape.
+        const CACHE_VERSION = 'v2';
+        const CACHE_TTL_MS  = 7 * 24 * 60 * 60 * 1000; // 1 week
+
+        function contestCacheKey(cid) { return `cf_contest_${CACHE_VERSION}_${cid}`; }
+
+        function getContestCache(cid) {
+            const raw = lsGet(contestCacheKey(cid), null);
+            if (!raw) return null;
+            // Validate structure: must be an array of problem objects
+            if (!Array.isArray(raw.problems) || raw.problems.length === 0) return null;
+            // TTL check – stale cache is re-fetched from CF
+            if (Date.now() - (raw.ts || 0) > CACHE_TTL_MS) return null;
+            return raw.problems;
+        }
+
+        function setContestCache(cid, problems) {
+            lsSet(contestCacheKey(cid), { problems, ts: Date.now() });
+        }
+
+        // Purge ALL contest problem caches (old-format keys too) without touching
+        // user notes, bookmarks, solved sets, etc.
+        function clearContestCache() {
+            const keysToDelete = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                // Matches both old "cf_contest_NNN" and new "cf_contest_v2_NNN"
+                if (k && k.startsWith('cf_contest_')) keysToDelete.push(k);
+            }
+            keysToDelete.forEach(k => localStorage.removeItem(k));
+            // Also wipe totals cache so progress bars recalculate
+            lsRemove('cf_cache_totals');
+            state.contestTotals.clear();
+            document.getElementById('cache-toast').style.display = 'none';
+            document.getElementById('bg-stats').innerText = `Cleared ${keysToDelete.length} cached contests.`;
+            setTimeout(() => document.getElementById('bg-stats').innerText = '', 3000);
+            // Re-open any open contest cards so they refetch
+            document.querySelectorAll('.contest-card.open').forEach(card => {
+                const body = card.querySelector('.contest-body');
+                body.dataset.loaded = 'false';
+                body.innerHTML = '';
+                card.classList.remove('open');
+            });
+        }
+
+        // ── STATE ──────────────────────────────────────────────────────────────
         let state = {
-            allContests: JSON.parse(localStorage.getItem('cf_cache_contests') || '[]'),
+            allContests: lsGet('cf_cache_contests', []),
             filteredContests: [], renderedCount: 0,
-            solved: new Set(JSON.parse(localStorage.getItem('cf_cache_solved') || '[]')),
-            attemptedContests: new Set(JSON.parse(localStorage.getItem('cf_cache_attempted_contests') || '[]')),
-            submissionMap: new Map(JSON.parse(localStorage.getItem('cf_cache_submission_map') || '[]')),
-            contestTotals: new Map(JSON.parse(localStorage.getItem('cf_cache_totals') || '[]')), 
+            solved: new Set(lsGet('cf_cache_solved', [])),
+            attemptedContests: new Set(lsGet('cf_cache_attempted_contests', [])),
+            submissionMap: new Map(lsGet('cf_cache_submission_map', [])),
+            contestTotals: new Map(lsGet('cf_cache_totals', [])),
             bookmarks: new Map(), activeProblem: null, viewMode: 'contests', user: null,
             bgFetchQueue: [], currentTab: 'notes'
         };
@@ -255,8 +352,7 @@
                     await loadUserData(u.uid);
                     document.getElementById('cloud-status').innerText = "☁️ Sync Active";
                 } else {
-                    const localBM = JSON.parse(localStorage.getItem('cf_bookmarks_map') || '[]');
-                    state.bookmarks = new Map(localBM);
+                    state.bookmarks = new Map(lsGet('cf_bookmarks_map', []));
                     document.getElementById('cloud-status').innerText = "⚠️ Guest Mode";
                 }
             });
@@ -267,12 +363,17 @@
                 fetchUserInfo(h);
             }
 
-            const obs = new IntersectionObserver(e => { if(e[0].isIntersecting && state.viewMode === 'contests') renderNextBatch(); }, { rootMargin: '200px' });
+            const obs = new IntersectionObserver(e => {
+                if(e[0].isIntersecting && state.viewMode === 'contests') renderNextBatch();
+            }, { rootMargin: '200px' });
             obs.observe(document.getElementById('sentinel'));
             initResizer();
         }
 
-        function handleAuth() { if(state.user) auth.signOut(); else auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => alert(e.message)); }
+        function handleAuth() {
+            if(state.user) auth.signOut();
+            else auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => alert(e.message));
+        }
         function updateAuthUI() { 
             const btn = document.getElementById('authBtn'); 
             const avatar = document.getElementById('user-avatar');
@@ -293,10 +394,10 @@
                     }
                     if(data.bookmarks) {
                         state.bookmarks = new Map(Object.entries(data.bookmarks));
-                        localStorage.setItem('cf_bookmarks_map', JSON.stringify([...state.bookmarks]));
+                        lsSet('cf_bookmarks_map', [...state.bookmarks]);
                     }
                 }
-            } catch(e) {}
+            } catch(e) { console.error('loadUserData error', e); }
             document.getElementById('cloud-loader').style.width = '0%';
         }
 
@@ -306,10 +407,10 @@
                 const data = await res.json();
                 if(data.status === 'OK') {
                     state.allContests = data.result.filter(c => c.phase === 'FINISHED').sort((a,b) => b.id - a.id);
-                    localStorage.setItem('cf_cache_contests', JSON.stringify(state.allContests));
+                    lsSet('cf_cache_contests', state.allContests);
                     applyFilters();
                 }
-            } catch(e) {}
+            } catch(e) { console.error('fetchContests error', e); }
         }
 
         async function syncUser(showUI=true) {
@@ -325,7 +426,7 @@
                 const data = await res.json();
                 if(data.status === 'OK') {
                     state.solved.clear(); state.attemptedContests.clear(); state.submissionMap.clear();
-                    localStorage.removeItem('cf_cache_solved'); localStorage.removeItem('cf_cache_attempted_contests'); localStorage.removeItem('cf_cache_submission_map');
+                    lsRemove('cf_cache_solved'); lsRemove('cf_cache_attempted_contests'); lsRemove('cf_cache_submission_map');
                     
                     document.querySelectorAll('.problem-row.solved').forEach(row => {
                         row.classList.remove('solved'); row.querySelector('.p-status').innerText = '';
@@ -340,9 +441,9 @@
                         }
                     });
                     
-                    localStorage.setItem('cf_cache_solved', JSON.stringify([...state.solved]));
-                    localStorage.setItem('cf_cache_attempted_contests', JSON.stringify([...state.attemptedContests]));
-                    localStorage.setItem('cf_cache_submission_map', JSON.stringify([...state.submissionMap]));
+                    lsSet('cf_cache_solved', [...state.solved]);
+                    lsSet('cf_cache_attempted_contests', [...state.attemptedContests]);
+                    lsSet('cf_cache_submission_map', [...state.submissionMap]);
                     
                     document.querySelectorAll('.problem-row').forEach(row => {
                         const pid = row.id.replace('row-', '');
@@ -351,8 +452,14 @@
                     applyFilters(); 
                     if(showUI) btn.innerText = "✓";
                     startBackgroundProgressFetch();
+                } else {
+                    console.error('CF API error:', data.comment);
+                    if(showUI) btn.innerText = "!";
                 }
-            } catch(e) { if(showUI) btn.innerText = "!"; }
+            } catch(e) {
+                console.error('syncUser error', e);
+                if(showUI) btn.innerText = "!";
+            }
             setTimeout(() => btn.innerText = "↻", 2000);
         }
 
@@ -418,12 +525,11 @@
         function startBackgroundProgressFetch() {
             state.bgFetchQueue = [...state.attemptedContests].filter(cid => !state.contestTotals.has(cid));
             state.bgFetchQueue.sort((a,b) => b - a);
-            if(state.bgFetchQueue.length > 0) { 
-                updateStatsBar(); 
-                // Delay background initialization to keep the primary user sync connection from timing out
-                setTimeout(processBackgroundQueue, 2500); 
+            if(state.bgFetchQueue.length > 0) { updateStatsBar(); processBackgroundQueue(); }
+            else { 
+                document.getElementById('bg-stats').innerText = "Stats synced."; 
+                setTimeout(() => document.getElementById('bg-stats').innerText = "", 3000); 
             }
-            else { document.getElementById('bg-stats').innerText = "Stats synced."; setTimeout(() => document.getElementById('bg-stats').innerText = "", 3000); }
         }
 
         function processBackgroundQueue() {
@@ -435,18 +541,17 @@
                 .then(data => {
                     if(data.status === 'OK') {
                         state.contestTotals.set(cid, data.result.problems.length);
-                        localStorage.setItem('cf_cache_totals', JSON.stringify([...state.contestTotals]));
+                        lsSet('cf_cache_totals', [...state.contestTotals]);
                         updateContestCardStyle(cid);
                     }
                 })
-                .catch(e => {})
-                // strict compliance window tracking (2.5s) to avoid client IP blockades
-                .finally(() => setTimeout(processBackgroundQueue, 2500)); 
+                .catch(e => { console.warn('bg fetch error for', cid, e); })
+                .finally(() => setTimeout(processBackgroundQueue, 800));
         }
 
         function updateStatsBar() { 
             const el = document.getElementById('bg-stats'); 
-            if(state.bgFetchQueue.length>0) el.innerText = `Updating: ${state.bgFetchQueue.length} left...`; 
+            if(state.bgFetchQueue.length > 0) el.innerText = `Updating: ${state.bgFetchQueue.length} left...`; 
         }
 
         function updateContestCardStyle(cid) {
@@ -471,11 +576,9 @@
                     if(!((n.includes("Codeforces Round") || n.includes("Educational")) && !n.includes("Hello") && !n.includes("Good Bye") && !n.includes("ICPC"))) return false;
                 }
                 if(onlyAttempted && !state.attemptedContests.has(c.id)) return false;
-                
                 if(divFilter !== "ALL") {
                     if(!n.includes(divFilter)) return false;
                 }
-
                 return true;
             });
             document.querySelectorAll('.contest-card').forEach(e => e.remove());
@@ -504,48 +607,93 @@
             state.renderedCount += 20;
         }
 
+        // ── CORE FIX: toggleContest ────────────────────────────────────────────
+        // Previously: used a single localStorage.getItem/setItem pair with no
+        // versioning, no TTL, no error propagation, and a bare `catch(e){}`.
+        // Now: uses versioned+TTL cache helpers, validates parsed data, and
+        // shows a visible error with a retry option instead of silently failing.
         async function toggleContest(header, cid) {
             const card = header.parentElement;
             const body = card.querySelector('.contest-body');
-            const cacheKey = `cf_contest_${cid}`;
-            if(card.classList.toggle('open')) {
-                const cached = localStorage.getItem(cacheKey);
-                if(cached) {
-                    if (!state.contestTotals.has(cid)) {
-                        state.contestTotals.set(cid, JSON.parse(cached).length);
-                        localStorage.setItem('cf_cache_totals', JSON.stringify([...state.contestTotals]));
-                        updateContestCardStyle(cid);
-                    }
-                    renderProblemsInBody(body, JSON.parse(cached), cid);
-                    body.dataset.loaded = "true";
-                } else {
-                    body.innerHTML = '<div style="padding:10px; text-align:center">Loading...</div>';
-                    try {
-                        const res = await fetch(`https://codeforces.com/api/contest.standings?contestId=${cid}&from=1&count=1`);
-                        const data = await res.json();
-                        if(data.status === 'OK') {
-                            const problems = data.result.problems;
-                            localStorage.setItem(cacheKey, JSON.stringify(problems));
-                            if(!state.contestTotals.has(cid)) {
-                                state.contestTotals.set(cid, problems.length);
-                                localStorage.setItem('cf_cache_totals', JSON.stringify([...state.contestTotals]));
-                                updateContestCardStyle(cid);
-                            }
-                            renderProblemsInBody(body, problems, cid);
-                            body.dataset.loaded = "true";
-                        } else {
-                            // UI Error Catching exposure
-                            body.innerHTML = `<div style="color:var(--danger); font-size:0.85rem; padding:12px; text-align:center">⚠️ Error: ${data.comment || 'Request Throttled'}</div>`;
-                        }
-                    } catch(e) { 
-                        body.innerHTML = '<div style="color:var(--danger); font-size:0.85rem; padding:12px; text-align:center">❌ Drop Failed Connection</div>'; 
-                    }
+
+            if (!card.classList.toggle('open')) return; // closing — nothing to do
+
+            // Already successfully loaded in this session
+            if (body.dataset.loaded === 'true') return;
+
+            // Try cache first
+            const cached = getContestCache(cid);
+            if (cached) {
+                if (!state.contestTotals.has(cid)) {
+                    state.contestTotals.set(cid, cached.length);
+                    lsSet('cf_cache_totals', [...state.contestTotals]);
+                    updateContestCardStyle(cid);
                 }
+                renderProblemsInBody(body, cached, cid);
+                body.dataset.loaded = 'true';
+                return;
+            }
+
+            // Fetch from CF API
+            body.innerHTML = '<div style="padding:10px; text-align:center; color:var(--text-secondary);">Loading problems…</div>';
+            try {
+                const res = await fetch(`https://codeforces.com/api/contest.standings?contestId=${cid}&from=1&count=1`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                if (data.status !== 'OK') throw new Error(data.comment || 'CF API error');
+
+                const problems = data.result.problems;
+                if (!Array.isArray(problems) || problems.length === 0) throw new Error('Empty problem list');
+
+                setContestCache(cid, problems);
+
+                if (!state.contestTotals.has(cid)) {
+                    state.contestTotals.set(cid, problems.length);
+                    lsSet('cf_cache_totals', [...state.contestTotals]);
+                    updateContestCardStyle(cid);
+                }
+                renderProblemsInBody(body, problems, cid);
+                body.dataset.loaded = 'true';
+
+            } catch(e) {
+                console.error(`toggleContest failed for ${cid}:`, e);
+                body.innerHTML = `
+                    <div style="padding:12px; color:var(--danger); font-size:0.85rem; display:flex; align-items:center; gap:10px;">
+                        <span>⚠ Failed to load problems. ${e.message || ''}</span>
+                        <button class="btn btn-sm" onclick="retryContest(this, ${cid})" style="white-space:nowrap;">Retry</button>
+                    </div>`;
+                body.dataset.loaded = 'false'; // allow retry
             }
         }
 
-        function renderProblemsInBody(body, problems, cid) { 
-            body.innerHTML = problems.map(p => createProblemHTML(p, cid)).join(''); 
+        // Retry button helper – resets state and calls toggleContest again
+        async function retryContest(btn, cid) {
+            const body = btn.closest('.contest-body');
+            const header = btn.closest('.contest-card').querySelector('.contest-header');
+            body.dataset.loaded = 'false';
+            // Force card open (it already is, just re-trigger fetch)
+            body.innerHTML = '<div style="padding:10px; text-align:center; color:var(--text-secondary);">Retrying…</div>';
+            try {
+                const res = await fetch(`https://codeforces.com/api/contest.standings?contestId=${cid}&from=1&count=1`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                if (data.status !== 'OK') throw new Error(data.comment || 'CF API error');
+                const problems = data.result.problems;
+                setContestCache(cid, problems);
+                if (!state.contestTotals.has(cid)) {
+                    state.contestTotals.set(cid, problems.length);
+                    lsSet('cf_cache_totals', [...state.contestTotals]);
+                    updateContestCardStyle(cid);
+                }
+                renderProblemsInBody(body, problems, cid);
+                body.dataset.loaded = 'true';
+            } catch(e) {
+                body.innerHTML = `<div style="padding:12px; color:var(--danger); font-size:0.85rem;">⚠ Still failing: ${e.message}. Try clearing the cache (🗑 button) or check your connection.</div>`;
+            }
+        }
+
+        function renderProblemsInBody(body, problems, cid) {
+            body.innerHTML = problems.map(p => createProblemHTML(p, cid)).join('');
         }
 
         function createProblemHTML(p, cid) {
@@ -553,42 +701,16 @@
             const isSolved = state.solved.has(pid);
             const isBookmarked = state.bookmarks.has(pid);
             const hasNote = localStorage.getItem(`cf_note_${pid}`) ? 'has-note' : '';
-            
             let ratingHtml = p.rating ? `<span class="topic-pill rating-pill">${p.rating}</span>` : '';
             const tagsHtml = (p.tags || []).map(t => `<span class="topic-pill">${t}</span>`).join('');
-            
-            const metaObj = { pid, cid, idx: p.index, name: p.name, rating: p.rating || 0, tags: p.tags || [] };
-            const b64Meta = btoa(unescape(encodeURIComponent(JSON.stringify(metaObj))));
-            
-            return `<div class="problem-row ${isSolved ? 'solved' : ''}" id="row-${pid}">
-                <div class="p-status">${isSolved ? '✅' : ''}</div>
-                <div class="p-index">${p.index}</div>
-                <div class="p-content">
-                    <div class="p-name">${p.name}</div>
-                    <div class="topic-list">${ratingHtml+tagsHtml}</div>
-                </div>
-                <div class="p-actions">
-                    <button class="icon-btn ${isBookmarked ? 'starred' : ''}" data-meta="${b64Meta}" onclick="handleBookmarkClick(this)">★</button>
-                    <button class="icon-btn ${hasNote}" data-meta="${b64Meta}" onclick="handleEditorClick(this)">✎</button>
-                    <a href="https://codeforces.com/contest/${cid}/problem/${p.index}" target="_blank" class="icon-btn">↗</a>
-                </div>
-            </div>`;
-        }
-
-        function handleBookmarkClick(btn) {
-            const meta = JSON.parse(decodeURIComponent(escape(atob(btn.dataset.meta))));
-            toggleBookmark(meta.pid, meta.cid, meta.idx, meta.name, meta.rating, meta.tags.join(","));
-        }
-
-        function handleEditorClick(btn) {
-            const meta = JSON.parse(decodeURIComponent(escape(atob(btn.dataset.meta))));
-            openEditor(meta.pid, meta.cid, meta.idx, meta.name);
+            const cleanName = p.name.replace(/'/g,"");
+            return `<div class="problem-row ${isSolved ? 'solved' : ''}" id="row-${pid}"><div class="p-status">${isSolved ? '✅' : ''}</div><div class="p-index">${p.index}</div><div class="p-content"><div class="p-name">${p.name}</div><div class="topic-list">${ratingHtml+tagsHtml}</div></div><div class="p-actions"><button class="icon-btn ${isBookmarked ? 'starred' : ''}" onclick="toggleBookmark('${pid}', ${cid}, '${p.index}', '${cleanName}', ${p.rating||0}, '${(p.tags||[]).join(",")}')">★</button><button class="icon-btn ${hasNote}" onclick="openEditor('${pid}', ${cid}, '${p.index}', '${cleanName}')">✎</button><a href="https://codeforces.com/contest/${cid}/problem/${p.index}" target="_blank" class="icon-btn">↗</a></div></div>`;
         }
 
         function toggleBookmark(pid, cid, idx, name, rating, tags) {
             if(state.bookmarks.has(pid)) state.bookmarks.delete(pid);
             else state.bookmarks.set(pid, { cid, idx, name, rating, tags: tags ? tags.split(',') : [] });
-            localStorage.setItem('cf_bookmarks_map', JSON.stringify([...state.bookmarks]));   
+            lsSet('cf_bookmarks_map', [...state.bookmarks]);
             if(state.user) db.collection('users').doc(state.user.uid).set({ bookmarks: Object.fromEntries(state.bookmarks) }, { merge: true });
             const row = document.getElementById(`row-${pid}`);
             if(row) row.querySelector('.p-actions button:nth-child(1)').classList.toggle('starred');
@@ -619,7 +741,6 @@
             state.currentTab = tabName;
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`tab-${tabName}`).classList.add('active');
-            
             document.getElementById('view-sub-btn').style.display = (tabName === 'solution') ? 'block' : 'none';
 
             if(tabName === 'notes') {
@@ -674,7 +795,7 @@
                             localStorage.setItem(`cf_note_${pid}`, cloudContent);
                         }
                     }
-                });
+                }).catch(e => console.error('note fetch error', e));
             }
             setTimeout(() => editor.refresh(), 10);
         }
